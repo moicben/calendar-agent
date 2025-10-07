@@ -186,7 +186,7 @@ def main(num_calendars: int = 1) -> None:
             remove_url_from_new(selected_url, new_calendars_file)
             
             # Vérifier si la réservation a réussi
-            if result_str and result_str not in ["ERREUR_RESERVATION", "SUCCESS_RESERVATION"]:
+            if result_str == "SUCCESS_RESERVATION":
                 print("✅ Réservation réussie!")
                 successful_bookings += 1
             else:
