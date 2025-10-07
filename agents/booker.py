@@ -69,49 +69,45 @@ def remove_url_from_new(url: str, new_file: str) -> None:
 
 
 def create_booking_prompt(url: str, user_info: dict) -> str:
-    """Crée le prompt pour la réservation avec les informations utilisateur."""
+    """Crée un prompt concis pour la réservation."""
     return f"""
-Tu es un agent de prise de rendez-vous automatique. Ta mission est de réserver un créneau sur cette page de calendrier : {url}
+Mission: Réserver un créneau sur {url}.
 
-INFORMATIONS DE RÉSERVATION :
-- Nom : {user_info.get('nom')}
-- Email : {user_info.get('email')}
-- Téléphone : {user_info.get('telephone')}
-- Site web : {user_info.get('site_web')}
-- Préférence de créneau : {user_info.get('preference_creneau')}
-- Type de rendez-vous : {user_info.get('type_rdv')}
-- Message additionnel : {user_info.get('message')}
+Données:
+- Nom: {user_info.get('nom')}
+- Email: {user_info.get('email')}
+- Téléphone: {user_info.get('telephone')}
+- Site web: {user_info.get('site_web')}
+- Société: {user_info.get('societe')}
+- Préférence: {user_info.get('preference_creneau')}
+- Type de RDV: {user_info.get('type_rdv')}
+- Message: {user_info.get('message')}
 
-INSTRUCTIONS :
-PHASE ARRIVÉE (ARRÊT POSSIBLE)
-1. Ouvre la page {url}.
-2. Si la page affiche « Page not found », « Not Found », « page introuvable », un code 404, ou un gabarit d'erreur → retourne UNIQUEMENT "ERREUR_RESERVATION" et ARRÊTE IMMÉDIATEMENT.
-3. Si le widget calendrier ne se charge pas (iframe/éléments Calendly/cal.com absents, chargement infini > 10 secondes, erreurs visibles) → retourne UNIQUEMENT "ERREUR_RESERVATION" et ARRÊTE IMMÉDIATEMENT.
+Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
+- SUCCESS_RESERVATION
+- AUCUN_CRENEAU_DISPONIBLE
+- ERREUR_RESERVATION
 
-PHASE DISPONIBILITÉS (ARRÊT POSSIBLE)
-4. Vérifie s'il y a des créneaux sur les 5 prochains jours. S'il n'y a AUCUNE disponibilité (aucun créneau affiché ou message d'indisponibilité) → retourne UNIQUEMENT "AUCUN_CRENEAU_DISPONIBLE" et ARRÊTE IMMÉDIATEMENT.
-5. Sinon, sélectionne le premier créneau disponible qui correspond aux préférences (sans changer le fuseau horaire).
+Étapes:
+1) Ouvre {url}. Si page introuvable/404 ou si le widget calendrier (Calendly, cal.com, etc.) ne charge pas → ERREUR_RESERVATION.
+2) Cherche des créneaux sur les 5 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE.
+3) Sélectionne le premier créneau conforme aux préférences. Ne change jamais le fuseau horaire affiché.
+4) Remplis le formulaire:
+   - Nom: {user_info.get('nom')}
+   - Email: {user_info.get('email')}
+   - Téléphone: {user_info.get('telephone')} (adapter le format si requis)
+   - Site/Société: {user_info.get('site_web')} / {user_info.get('societe')}
+   - Message/Notes: {user_info.get('message')}
+   - Listes déroulantes obligatoires: première option raisonnable.
+   - Cases à cocher obligatoires: cocher.
+   - Type de RDV: {user_info.get('type_rdv')}
+5) En cas d'erreur de validation, corrige puis réessaie jusqu'à 2 fois.
+6) Soumets. Si confirmation visible → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION.
 
-PHASE FORMULAIRE (NE PAS S'ARRÊTER SAUF ÉCHEC IRRÉCUPÉRABLE)
-6. Remplis tous les champs requis. Si une information n'a pas de correspondance directe, applique ces règles de flexibilité:
-   - Nom: utilise {user_info.get('nom')}.
-   - Email: utilise {user_info.get('email')}.
-   - Téléphone: utilise {user_info.get('telephone')} et adapte le format si nécessaire.
-   - Site web / Société / Domaine: utilise {user_info.get('site_web')}; si "Société" est demandé, mets "TR ARCHITECTE".
-   - Fonction / Titre / Poste: mets "Client" si requis.
-   - Message / Notes: utilise {user_info.get('message')} ou un court résumé cohérent.
-   - Sélecteurs obligatoires (liste déroulante): choisis la première option raisonnable si aucune préférence explicite.
-   - Cases à cocher obligatoires: coche celles nécessaires pour soumettre.
-   - Dates/Heures: garde le fuseau horaire du calendrier (pas de changement), fais uniquement la conversion mentale vers l'heure d'Europe centrale.
-7. En cas d'erreur de validation, corrige et réessaie jusqu'à 2 fois. Ne t'arrête pas entre les tentatives.
-8. Soumets le formulaire. Si une confirmation est visible → retourne UNIQUEMENT "SUCCESS_RESERVATION". Si après 2 tentatives la soumission reste impossible → retourne UNIQUEMENT "ERREUR_RESERVATION".
-
-CONTRAINTES :
-•	Ne change pas le fuseau horaire du calendrier fait seulement la conversion du décalage horaires entre le fuseau du calendrier et celui d'Europe Central (Paris) 
-•	N'attends pas de confirmation explicite avant de valider une réservation, tu es 100% autonome.
-•	Tu DOIS t'arrêter immédiatement dès qu'une des conditions d'arrêt du point 3 est détectée.
-•	Retourne UNIQUEMENT l'une de ces valeurs finales: "SUCCESS_RESERVATION", "AUCUN_CRENEAU_DISPONIBLE", "ERREUR_RESERVATION".
-•	N'essaie pas de contourner une indisponibilité ou une erreur par des navigations ou des rafraîchissements supplémentaires.
+Contraintes:
+- Agis de façon autonome; n'attends aucune confirmation manuelle.
+- Ne change pas le fuseau horaire; conversion mentale seulement si nécessaire.
+- N'essaie pas de forcer une disponibilité via refresh/navigation annexe.
 """
 
 
@@ -132,8 +128,9 @@ def main(num_calendars: int = 1) -> None:
         "email": "carbone.developpement@gmail.com", 
         "telephone": "+447446162797",
         "site_web": "www.tr-architecte.fr",
+        "societe": "TR ARCHITECTE",
         "preference_creneau": "Premier créneau disponible dans les 5 prochains jours",
-        "type_rdv": "Visioconférence",
+        "type_rdv": "Visionconférence Google Meet",
         "message": "Dans le cadre de la création de notre nouveau site, et l'update de nos réseaux. Je cherche un(e) expert(e) fiable pour m'accompagner sur la création et mise en forme de contenus. TR-ARCHITECTE.FR\nMerci, Thibault Ressy"
     }
 
@@ -198,12 +195,11 @@ def main(num_calendars: int = 1) -> None:
             task=booking_task,
             llm=ChatOpenAI(model="gpt-4o-mini"),
             browser=browser,
-            max_steps=16,
             output_model_schema=BookingOutput,
         )
 
         try:
-            result = agent.run_sync()
+            result = agent.run_sync(max_steps=20)
             status = result.status.value
             
             print(f"Résultat de la réservation: {status}")
