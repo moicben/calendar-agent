@@ -47,11 +47,22 @@ def load_proxies(file_path: str) -> List[Dict[str, str]]:
         return []
 
 
-def get_random_proxy(proxies: List[Dict[str, str]]) -> Optional[Dict[str, str]]:
-    """Retourne un proxy aléatoire depuis la liste."""
+def get_random_proxy(proxies: List[Dict[str, str]], exclude_proxies: List[Dict[str, str]] = None) -> Optional[Dict[str, str]]:
+    """Retourne un proxy aléatoire depuis la liste, en excluant ceux déjà utilisés."""
     if not proxies:
         return None
-    return random.choice(proxies)
+    
+    if exclude_proxies is None:
+        exclude_proxies = []
+    
+    # Filtrer les proxies déjà utilisés
+    available_proxies = [p for p in proxies if p not in exclude_proxies]
+    
+    if not available_proxies:
+        print("⚠️ Tous les proxies ont été testés, retour au début de la liste")
+        return random.choice(proxies)
+    
+    return random.choice(available_proxies)
 
 
 def save_booked_url(url: str, booked_file: str) -> None:
@@ -142,75 +153,93 @@ def main(num_calendars: int = 1) -> None:
         print(f"\n--- Traitement {i}/{len(urls_to_process)} ---")
         print(f"Tentative de réservation sur: {selected_url}")
 
-        # Sélectionner un proxy aléatoire pour ce calendrier
-        selected_proxy = get_random_proxy(available_proxies)
-        print(f"Proxy utilisé: {selected_proxy['host']}:{selected_proxy['port']}")
-
-        # Configuration Chrome depuis les variables d'environnement
-        chrome_path = os.getenv("CHROME_PATH")
-
-        browser = Browser(
-            executable_path=chrome_path,
-            headless=False,
-            devtools=True,
-            enable_default_extensions=False,
-            # user_data_dir="../browseruse-profile",  # Temporairement désactivé
-            proxy={
-                "server": f"http://{selected_proxy['host']}:{selected_proxy['port']}",
-                "username": selected_proxy['username'],
-                "password": selected_proxy['password']
-            },
-            args=[
-                "--no-first-run",
-                "--no-default-browser-check",
-                "--disable-background-networking",
-                "--disable-sync",
-                "--disable-dev-shm-usage",  # Important pour VM
-                "--no-sandbox",  # Important pour VM
-                "--disable-gpu",  # Important pour VM
-                "--disable-web-security",
-                "--disable-features=VizDisplayCompositor",
-                "--window-size=1920,1080",
-            ],
-            wait_for_network_idle_page_load_time=3,  # Augmenté de 1 à 3
-            minimum_wait_page_load_time=1,  # Augmenté de 0.5 à 1
-        )
-
-        # Créer le prompt de réservation
-        booking_task = create_booking_prompt(selected_url, user_info)
-
-        agent = Agent(
-            task=booking_task,
-            llm=ChatOpenAI(model="gpt-4o-mini"),  # Changé de gpt-5-nano à gpt-4o-mini
-            browser=browser,
-        )
-
-        try:
-            result = agent.run_sync()
-            result_str = str(result).strip()
+        # Liste des proxies déjà testés pour cette URL
+        tested_proxies = []
+        max_proxy_attempts = min(5, len(available_proxies))  # Maximum 5 tentatives ou tous les proxies
+        booking_successful = False
+        
+        for proxy_attempt in range(max_proxy_attempts):
+            # Sélectionner un proxy aléatoire pour ce calendrier
+            selected_proxy = get_random_proxy(available_proxies, tested_proxies)
+            print(f"Proxy utilisé (tentative {proxy_attempt + 1}/{max_proxy_attempts}): {selected_proxy['host']}:{selected_proxy['port']}")
             
-            print(f"Résultat de la réservation: {result_str}")
-            
-            # Vérifier si la réservation a réussi
-            if result_str and result_str not in ["AUCUN_CRENEAU_DISPONIBLE", "ERREUR_RESERVATION"]:
-                # Sauvegarder l'URL réservée
-                save_booked_url(selected_url, booked_calendars_file)
-                print("✅ Réservation réussie!")
-                successful_bookings += 1
-            else:
-                print("❌ Réservation échouée ou aucun créneau disponible")
-                failed_bookings += 1
-                
-        except Exception as e:
-            print(f"Erreur lors de l'exécution de l'agent: {e}")
-            failed_bookings += 1
-        finally:
-            # Fermer proprement le browser
+            # Ajouter ce proxy à la liste des testés
+            tested_proxies.append(selected_proxy)
+
+            # Configuration Chrome depuis les variables d'environnement
+            chrome_path = os.getenv("CHROME_PATH")
+
+            browser = Browser(
+                executable_path=chrome_path,
+                headless=False,
+                devtools=True,
+                enable_default_extensions=False,
+                # user_data_dir="../browseruse-profile",  # Temporairement désactivé
+                proxy={
+                    "server": f"http://{selected_proxy['host']}:{selected_proxy['port']}",
+                    "username": selected_proxy['username'],
+                    "password": selected_proxy['password']
+                },
+                args=[
+                    "--no-first-run",
+                    "--no-default-browser-check",
+                    "--disable-background-networking",
+                    "--disable-sync",
+                    "--disable-dev-shm-usage",  # Important pour VM
+                    "--no-sandbox",  # Important pour VM
+                    "--disable-gpu",  # Important pour VM
+                    "--disable-web-security",
+                    "--disable-features=VizDisplayCompositor",
+                    "--window-size=1920,1080",
+                ],
+                wait_for_network_idle_page_load_time=3,  # Augmenté de 1 à 3
+                minimum_wait_page_load_time=1,  # Augmenté de 0.5 à 1
+            )
+
+            # Créer le prompt de réservation
+            booking_task = create_booking_prompt(selected_url, user_info)
+
+            agent = Agent(
+                task=booking_task,
+                llm=ChatOpenAI(model="gpt-4o-mini"),  # Changé de gpt-5-nano à gpt-4o-mini
+                browser=browser,
+            )
+
             try:
-                browser.close()
-                print("🧹 Browser fermé proprement")
-            except:
-                pass
+                result = agent.run_sync()
+                result_str = str(result).strip()
+                
+                print(f"Résultat de la réservation: {result_str}")
+                
+                # Vérifier si la réservation a réussi
+                if result_str and result_str not in ["AUCUN_CRENEAU_DISPONIBLE", "ERREUR_RESERVATION"]:
+                    # Sauvegarder l'URL réservée
+                    save_booked_url(selected_url, booked_calendars_file)
+                    print("✅ Réservation réussie!")
+                    successful_bookings += 1
+                    booking_successful = True
+                    break  # Sortir de la boucle proxy
+                else:
+                    print("❌ Réservation échouée ou aucun créneau disponible")
+                    if proxy_attempt < max_proxy_attempts - 1:
+                        print("🔄 Tentative avec un autre proxy...")
+                    
+            except Exception as e:
+                print(f"Erreur lors de l'exécution de l'agent: {e}")
+                if proxy_attempt < max_proxy_attempts - 1:
+                    print("🔄 Tentative avec un autre proxy...")
+            finally:
+                # Fermer proprement le browser
+                try:
+                    browser.close()
+                    print("🧹 Browser fermé proprement")
+                except:
+                    pass
+        
+        # Si aucune tentative n'a réussi
+        if not booking_successful:
+            print("❌ Échec avec tous les proxies testés")
+            failed_bookings += 1
     
     # Résumé final
     print(f"\n=== RÉSUMÉ ===")
