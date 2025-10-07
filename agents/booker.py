@@ -9,9 +9,21 @@ from typing import List, Optional
 from browser_use import Agent, ChatOpenAI, Browser
 from browser_use.browser import ProxySettings
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from enum import Enum
 
 # Charger les variables d'environnement
 load_dotenv()
+
+
+class BookingStatus(str, Enum):
+    SUCCESS_RESERVATION = "SUCCESS_RESERVATION"
+    AUCUN_CRENEAU_DISPONIBLE = "AUCUN_CRENEAU_DISPONIBLE"
+    ERREUR_RESERVATION = "ERREUR_RESERVATION"
+
+
+class BookingOutput(BaseModel):
+    status: BookingStatus
 
 
 def load_calendar_urls(file_path: str) -> List[str]:
@@ -171,14 +183,15 @@ def main(num_calendars: int = 1) -> None:
             task=booking_task,
             llm=ChatOpenAI(model="gpt-4o-mini"),
             browser=browser,
-            max_steps=20,
+            max_steps=16,
+            output_model_schema=BookingOutput,
         )
 
         try:
             result = agent.run_sync()
-            result_str = str(result).strip()
+            status = result.status.value
             
-            print(f"Résultat de la réservation: {result_str}")
+            print(f"Résultat de la réservation: {status}")
             
             # Déplacer l'URL vers booked dans tous les cas
             save_booked_url(selected_url, booked_calendars_file)
@@ -186,7 +199,7 @@ def main(num_calendars: int = 1) -> None:
             remove_url_from_new(selected_url, new_calendars_file)
             
             # Vérifier si la réservation a réussi
-            if result_str == "SUCCESS_RESERVATION":
+            if status == "SUCCESS_RESERVATION":
                 print("✅ Réservation réussie!")
                 successful_bookings += 1
             else:
