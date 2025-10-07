@@ -200,7 +200,11 @@ def main(num_calendars: int = 1) -> None:
 
         try:
             result = agent.run_sync(max_steps=20)
-            status = result.status.value
+            # Le résultat est maintenant un AgentHistoryList, on doit extraire le statut différemment
+            if hasattr(result, 'final_result') and result.final_result:
+                status = result.final_result.get('status', 'ERREUR_RESERVATION')
+            else:
+                status = 'ERREUR_RESERVATION'
             
             print(f"Résultat de la réservation: {status}")
             
