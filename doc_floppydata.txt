@@ -1,0 +1,66 @@
+API Documentation
+Proxy Parameters Guide
+This guide details the advanced parameters available for configuring your proxy sessions. These parameters allow for granular control over the geographic location, network type, IP rotation, and session persistence of your outgoing connections.
+Proxy Authentication URL Format
+Your proxy credentials are structured as a URL that includes your username, parameters, and password. The full format is:
+http://user-[USERNAME]-[PARAM_NAME]-[PARAMP]:[PASSWORD]@[GATEWAY_HOST]:[PORT]
+Components:
+[USERNAME]: Your unique account identifier.
+[PARAM_NAME]: Name of proxy parameters, e.g. country
+[PARAM_VALUE]: Value for the parameter. Appropriate values depend on the parameter
+[PASSWORD]: Your account's proxy password.
+[GATEWAY_HOST]: The proxy server hostname or IP (e.g., geo.g-w.info).
+[PORT]: The port number for the proxy server (e.g., 10080).
+Full Request Example
+curl --proxy "http://user-username-country-US-type-residential-session-testsesssion123:password@geo.g-w.info:10080" https://google.com
+Available Parameters
+type (Mandatory)
+Specifies the type of network (ISP) you want the exit IP to originate from.
+Accepted Values: residential, mobile, datacenter
+Example: type-residential
+Description:
+residential: IPs assigned by Internet Service Providers (ISPs) to home users. Highest legitimacy and lowest block rate.
+mobile: IPs from cellular networks (3G/4G/5G). Ideal for testing mobile apps or websites.
+datacenter: IPs from cloud providers and data centers. Offers high speed and is cost-effective for less restrictive tasks.
+country (Mandatory)
+Defines the two-letter ISO country code for the exit IP location. The value is case-insensitive.
+Format: Two-letter code (ISO 3166-1 alpha-2).
+Accepted Values: US, GB, DE, FR, BR, JP, etc.
+Example: country-US (United States), country-DE (Germany)
+Description: This parameter is required to ensure your traffic exits in the desired country. If the requested country/city combination is unavailable, the connection may fail.
+city (Optional)
+Narrows the exit IP location to a specific city within the chosen country. The city name must be provided in English. City names are case-sensitive.
+Format: City name without spaces or special characters; use dots for multi-word names.
+Example: city-New_York, city-Paris, city-London
+Important: Not all cities are available in all countries. Combining city with country is mandatory (e.g., country-US-city-Chicago). The availability of cities is subject to our proxy inventory.
+Important: If there are spaces in the city name, they should be replaced with an underscore (_) in order to be recognized by our system as a valid parameter.
+rotation (Optional)
+Controls how frequently the exit IP address changes for a session. The default rotation is 0 (sticky) if the parameter is omitted.
+Accepted Values: none, 0, 5, 10, 15, 20, 60
+Default: 0 (Sticky IP)
+Description:
+rotation-0: Sticky IP. The same IP address is maintained for the duration of the session. For long-term stickiness, this must be used with the session parameter.
+rotation-5, 10, etc.: Timed Rotation. The IP address associated with a session will be automatically changed after the specified number of minutes (e.g., rotation.10 rotates the session's IP every 10 minutes).
+session (Optional)
+A unique identifier used to create and maintain a session, enabling consistent control over IP address usage.
+Max Length: 128 characters.
+Example: session-testsesssion123, session-twitter1
+Description: When a session name is provided, the system will link your requests to a specific exit IP based on the rotation parameter. This is crucial for tasks that require a persistent identity, such as maintaining a logged-in state on a website.
+Interaction with rotation:
+session + rotation-0: The same IP will be maintained for the life of the session (sticky session).
+session + rotation-15: The session will be maintained, but the IP will rotate every 15 minutes. This provides a balance between consistency and avoiding rate limits.
+if session is specified, but rotation isn't defined, then it will be treated as a sticky session
+if neither session nor rotation are defined, every request will be made through a different IP address
+Best Practices:
+Use a unique, reproducible session name for each distinct task or user you are emulating (e.g., session-user_abc_cart_456).
+Sessions typically expire after a period of inactivity (e.g., 30 minutes).
+Parameter Usage & Examples
+Example 1: Sticky US Residential Session for Account Management
+Ideal for maintaining a logged-in state on a website. The same US residential IP will be used for all requests in this session.
+curl --proxy "http://user-USERNAME-country-US-type-residential-session-my_account_1-rotation-0:PASSWORD@geo.g-w.info:10080" https://example.com
+Example 2: Session with Timed IP Rotation in Germany
+Perfect for a long-running task that benefits from session consistency but requires a fresh IP address every 10 minutes to avoid detection.
+curl --proxy "http://user-USERNAME-country-DE-type-mobile-session-my_task-rotation-10:PASSWORD@geo.g-w.info:10080" https://example.com
+Example 3: Rotating Datacenter Proxy in London
+A fast, cost-effective option for high-volume requests where no session persistence is needed. A new IP is used for every request.
+curl --proxy "http://user-USERNAME-country-GB-city-London-type-datacenter-rotation--1:PASSWORD@geo.g-w.info:10080" https://example.com

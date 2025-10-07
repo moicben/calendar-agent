@@ -40,25 +40,25 @@ def create_booking_prompt(url: str, user_info: dict) -> str:
 Tu es un agent de prise de rendez-vous automatique. Ta mission est de réserver un créneau sur cette page de calendrier : {url}
 
 INFORMATIONS DE RÉSERVATION :
-- Nom : {user_info.get('nom', 'Non spécifié')}
-- Email : {user_info.get('email', 'Non spécifié')}
-- Téléphone : {user_info.get('telephone', 'Non spécifié')}
-- Préférence de créneau : {user_info.get('preference_creneau', 'Premier créneau disponible')}
-- Type de rendez-vous : {user_info.get('type_rdv', 'Appel découverte')}
-- Message additionnel : {user_info.get('message', 'Appel pour discuter de collaboration')}
+- Nom : {user_info.get('nom')}
+- Email : {user_info.get('email')}
+- Téléphone : {user_info.get('telephone')}
+- Préférence de créneau : {user_info.get('preference_creneau')}
+- Type de rendez-vous : {user_info.get('type_rdv')}
+- Message additionnel : {user_info.get('message')}
 
 INSTRUCTIONS :
 1. Va sur la page {url}
-2. Trouve le premier créneau disponible qui correspond aux préférences
+2. Trouve le premier créneau disponible qui correspond aux préférences (sans changer le fuseau horaire)
 3. Remplis le formulaire avec les informations fournies
 4. Confirme la réservation
-5. Une fois la réservation confirmée, retourne l'URL complète de la page de confirmation ou de la page de calendrier
+5. Une fois la réservation confirmée, retourne "SUCCESS_RESERVATION" ou "ERREUR_RESERVATION"
 
-IMPORTANT : 
-- Sois poli et professionnel
-- Si aucun créneau n'est disponible, retourne "AUCUN_CRENEAU_DISPONIBLE"
-- Si une erreur survient, retourne "ERREUR_RESERVATION"
-- Attends la confirmation avant de considérer la réservation comme réussie
+CONTRAINTES :
+•	Ne change pas le fuseau horaire du calendrier fait seulement la conversion du décalage horaires entre le fuseau du calendrier et celui d'Europe Central (Paris) 
+•	Attends confirmation explicite avant de valider une réservation.
+•	Retourne "SUCCESS_RESERVATION" si la réservation a réussi.
+•	Retourne "ERREUR_RESERVATION" en cas d’erreur technique.
 """
 
 
@@ -78,9 +78,9 @@ def main(num_calendars: int = 1) -> None:
         "nom": "Thibault Ressy",
         "email": "carbone.developpement@gmail.com", 
         "telephone": "+447446162797",
-        "preference_creneau": "Premier créneau disponible cette semaine",
+        "preference_creneau": "Premier créneau disponible entre 9h et 12h (heure d'Europe centrale)",
         "type_rdv": "Visioconférence",
-        "message": "Bonjour, je souhaite réserver un créneau pour discuter d'une collaboration potentielle."
+        "message": "Dans le cadre de la création de notre nouveau site, et l’update de nos réseaux. Je cherche un(e) expert(e) fiable pour m’accompagner sur la création et mise en forme de contenus. TR-ARCHITECTE.FR\nMerci, Thibault Ressy"
     }
 
     # Charger les URLs disponibles
@@ -142,7 +142,7 @@ def main(num_calendars: int = 1) -> None:
 
         agent = Agent(
             task=booking_task,
-            llm=ChatOpenAI(model="gpt-4o-mini"),  # Changé de gpt-5-nano à gpt-4o-mini
+            llm=ChatOpenAI(model="gpt-5-nano"),
             browser=browser,
         )
 
@@ -153,7 +153,7 @@ def main(num_calendars: int = 1) -> None:
             print(f"Résultat de la réservation: {result_str}")
             
             # Vérifier si la réservation a réussi
-            if result_str and result_str not in ["AUCUN_CRENEAU_DISPONIBLE", "ERREUR_RESERVATION"]:
+            if result_str and result_str not in ["ERREUR_RESERVATION", "SUCCESS_RESERVATION"]:
                 # Sauvegarder l'URL réservée
                 save_booked_url(selected_url, booked_calendars_file)
                 print("✅ Réservation réussie!")
