@@ -37,6 +37,45 @@ def load_calendar_urls(file_path: str) -> List[str]:
         return []
 
 
+def load_random_proxy(proxies_file: str = "proxies") -> Optional[ProxySettings]:
+    """Charge un proxy aléatoire depuis le fichier proxies."""
+    try:
+        with open(proxies_file, 'r', encoding='utf-8') as f:
+            proxy_lines = [line.strip() for line in f.readlines() if line.strip()]
+        
+        if not proxy_lines:
+            print("Aucun proxy disponible dans le fichier proxies")
+            return None
+        
+        # Sélectionner un proxy aléatoire
+        random_proxy_line = random.choice(proxy_lines)
+        
+        # Parser le format: host:port:username:password
+        parts = random_proxy_line.split(':')
+        if len(parts) != 4:
+            print(f"Format de proxy invalide: {random_proxy_line}")
+            return None
+        
+        host, port, username, password = parts
+        
+        proxy_config = ProxySettings(
+            server=f'https://{host}:{port}',
+            username=username,
+            password=password,
+            bypass='localhost,127.0.0.1'
+        )
+        
+        print(f"Proxy sélectionné: {host}:{port}")
+        return proxy_config
+        
+    except FileNotFoundError:
+        print(f"Fichier {proxies_file} non trouvé")
+        return None
+    except Exception as e:
+        print(f"Erreur lors du chargement du proxy: {e}")
+        return None
+
+
 def save_booked_url(url: str, booked_file: str) -> None:
     """Sauvegarde une URL réservée dans le fichier booked."""
     try:
@@ -109,6 +148,7 @@ Contraintes:
 - Agis de façon autonome; n'attends aucune confirmation manuelle.
 - Ne change pas le fuseau horaire; conversion mentale seulement si nécessaire.
 - N'essaie pas de forcer une disponibilité via refresh/navigation annexe.
+- Si visioconférence ou appel téléphone choisir visioconférence (Google Meet de préférence).
 """
 
 
@@ -158,13 +198,8 @@ def main(num_calendars: int = 1) -> None:
         # Configuration Chrome depuis les variables d'environnement
         chrome_path = os.getenv("CHROME_PATH")
 
-        # Configuration du proxy HTTPS
-        proxy_config = ProxySettings(
-            server='https://geo.g-w.info:10443',
-            username='p8lTvBbFDHV3PtLu',
-            password='dajXL25Is4I91Cnm',
-            bypass='localhost,127.0.0.1'
-        )
+        # Configuration du proxy aléatoire
+        proxy_config = load_random_proxy()
 
         browser = Browser(
             executable_path=chrome_path,
