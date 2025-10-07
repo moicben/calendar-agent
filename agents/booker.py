@@ -77,6 +77,7 @@ INFORMATIONS DE RÉSERVATION :
 - Nom : {user_info.get('nom')}
 - Email : {user_info.get('email')}
 - Téléphone : {user_info.get('telephone')}
+- Site web : {user_info.get('site_web')}
 - Préférence de créneau : {user_info.get('preference_creneau')}
 - Type de rendez-vous : {user_info.get('type_rdv')}
 - Message additionnel : {user_info.get('message')}
@@ -117,9 +118,10 @@ def main(num_calendars: int = 1) -> None:
         "nom": "Thibault Ressy",
         "email": "carbone.developpement@gmail.com", 
         "telephone": "+447446162797",
+        "site_web": "www.tr-architecte.fr",
         "preference_creneau": "Premier créneau disponible dans les 5 prochains jours",
         "type_rdv": "Visioconférence",
-        "message": "Dans le cadre de la création de notre nouveau site, et l’update de nos réseaux. Je cherche un(e) expert(e) fiable pour m’accompagner sur la création et mise en forme de contenus. TR-ARCHITECTE.FR\nMerci, Thibault Ressy"
+        "message": "Dans le cadre de la création de notre nouveau site, et l'update de nos réseaux. Je cherche un(e) expert(e) fiable pour m'accompagner sur la création et mise en forme de contenus. TR-ARCHITECTE.FR\nMerci, Thibault Ressy"
     }
 
     # Charger les URLs disponibles
