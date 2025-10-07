@@ -102,7 +102,7 @@ def main(num_calendars: int = 1) -> None:
         "nom": "Thibault Ressy",
         "email": "carbone.developpement@gmail.com", 
         "telephone": "+447446162797",
-        "preference_creneau": "Premier créneau disponible entre 9h et 12h (heure d'Europe centrale)",
+        "preference_creneau": "Premier créneau disponible",
         "type_rdv": "Visioconférence",
         "message": "Dans le cadre de la création de notre nouveau site, et l’update de nos réseaux. Je cherche un(e) expert(e) fiable pour m’accompagner sur la création et mise en forme de contenus. TR-ARCHITECTE.FR\nMerci, Thibault Ressy"
     }
