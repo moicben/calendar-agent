@@ -35,6 +35,27 @@ def save_booked_url(url: str, booked_file: str) -> None:
         print(f"Erreur lors de la sauvegarde: {e}")
 
 
+def remove_url_from_new(url: str, new_file: str) -> None:
+    """Retire une URL du fichier new après traitement."""
+    try:
+        with open(new_file, 'r', encoding='utf-8') as f:
+            urls = [line.strip() for line in f.readlines() if line.strip()]
+        
+        # Retirer l'URL traitée
+        if url in urls:
+            urls.remove(url)
+            
+            # Réécrire le fichier sans l'URL traitée
+            with open(new_file, 'w', encoding='utf-8') as f:
+                for remaining_url in urls:
+                    f.write(f"{remaining_url}\n")
+            print(f"URL retirée de calendars/new: {url}")
+        else:
+            print(f"URL non trouvée dans calendars/new: {url}")
+    except Exception as e:
+        print(f"Erreur lors de la suppression de l'URL: {e}")
+
+
 def create_booking_prompt(url: str, user_info: dict) -> str:
     """Crée le prompt pour la réservation avec les informations utilisateur."""
     return f"""
@@ -50,10 +71,12 @@ INFORMATIONS DE RÉSERVATION :
 
 INSTRUCTIONS :
 1. Va sur la page {url}
-2. Trouve le premier créneau disponible qui correspond aux préférences (sans changer le fuseau horaire)
-3. Remplis le formulaire avec les informations fournies
-4. Confirme la réservation
-5. Une fois la réservation confirmée, retourne "SUCCESS_RESERVATION" ou "ERREUR_RESERVATION"
+2. Vérifie si le calendrier est disponible et s'il y a des créneaux sur les 5 prochains jours
+3. Si aucun créneau n'est disponible, retourne "AUCUN_CRENEAU_DISPONIBLE" ou "ERREUR_RESERVATION" et arrête le processus.
+4. Trouve le premier créneau disponible qui correspond aux préférences (sans changer le fuseau horaire)
+5. Remplis le formulaire avec les informations fournies
+6. Confirme la réservation
+7. Une fois la réservation confirmée, retourne "SUCCESS_RESERVATION"
 
 CONTRAINTES :
 •	Ne change pas le fuseau horaire du calendrier fait seulement la conversion du décalage horaires entre le fuseau du calendrier et celui d'Europe Central (Paris) 
@@ -153,10 +176,13 @@ def main(num_calendars: int = 1) -> None:
             
             print(f"Résultat de la réservation: {result_str}")
             
+            # Déplacer l'URL vers booked dans tous les cas
+            save_booked_url(selected_url, booked_calendars_file)
+            # Retirer l'URL de calendars/new
+            remove_url_from_new(selected_url, new_calendars_file)
+            
             # Vérifier si la réservation a réussi
             if result_str and result_str not in ["ERREUR_RESERVATION", "SUCCESS_RESERVATION"]:
-                # Sauvegarder l'URL réservée
-                save_booked_url(selected_url, booked_calendars_file)
                 print("✅ Réservation réussie!")
                 successful_bookings += 1
             else:
@@ -165,6 +191,10 @@ def main(num_calendars: int = 1) -> None:
                 
         except Exception as e:
             print(f"Erreur lors de l'exécution de l'agent: {e}")
+            # Déplacer l'URL vers booked même en cas d'erreur
+            save_booked_url(selected_url, booked_calendars_file)
+            # Retirer l'URL de calendars/new même en cas d'erreur
+            remove_url_from_new(selected_url, new_calendars_file)
             failed_bookings += 1
         finally:
             # Fermer proprement le browser
