@@ -83,15 +83,28 @@ INFORMATIONS DE RÉSERVATION :
 - Message additionnel : {user_info.get('message')}
 
 INSTRUCTIONS :
-1. Va sur la page {url}
-2. Vérifie si le calendrier est disponible et s'il y a des créneaux sur les 5 prochains jours
-3. CONTRÔLES D'ARRÊT IMMÉDIAT (ne pas continuer si l'une des conditions est vraie) :
-   3.1. Si la page affiche « Page not found », « Not Found », « page introuvable », un code 404, ou un gabarit d'erreur → retourne UNIQUEMENT "ERREUR_RESERVATION" et ARRÊTE IMMÉDIATEMENT.
-   3.2. S'il n'y a AUCUNE disponibilité (aucun créneau affiché sur les 5 prochains jours ou message d'indisponibilité explicite) → retourne UNIQUEMENT "AUCUN_CRENEAU_DISPONIBLE" et ARRÊTE IMMÉDIATEMENT.
-4. Si aucune condition d'arrêt n'est déclenchée, trouve le premier créneau disponible qui correspond aux préférences (sans changer le fuseau horaire)
-5. Remplis le formulaire avec les informations fournies
-6. Confirme la réservation
-7. Une fois la réservation confirmée, retourne UNIQUEMENT "SUCCESS_RESERVATION"
+PHASE ARRIVÉE (ARRÊT POSSIBLE)
+1. Ouvre la page {url}.
+2. Si la page affiche « Page not found », « Not Found », « page introuvable », un code 404, ou un gabarit d'erreur → retourne UNIQUEMENT "ERREUR_RESERVATION" et ARRÊTE IMMÉDIATEMENT.
+3. Si le widget calendrier ne se charge pas (iframe/éléments Calendly/cal.com absents, chargement infini > 10 secondes, erreurs visibles) → retourne UNIQUEMENT "ERREUR_RESERVATION" et ARRÊTE IMMÉDIATEMENT.
+
+PHASE DISPONIBILITÉS (ARRÊT POSSIBLE)
+4. Vérifie s'il y a des créneaux sur les 5 prochains jours. S'il n'y a AUCUNE disponibilité (aucun créneau affiché ou message d'indisponibilité) → retourne UNIQUEMENT "AUCUN_CRENEAU_DISPONIBLE" et ARRÊTE IMMÉDIATEMENT.
+5. Sinon, sélectionne le premier créneau disponible qui correspond aux préférences (sans changer le fuseau horaire).
+
+PHASE FORMULAIRE (NE PAS S'ARRÊTER SAUF ÉCHEC IRRÉCUPÉRABLE)
+6. Remplis tous les champs requis. Si une information n'a pas de correspondance directe, applique ces règles de flexibilité:
+   - Nom: utilise {user_info.get('nom')}.
+   - Email: utilise {user_info.get('email')}.
+   - Téléphone: utilise {user_info.get('telephone')} et adapte le format si nécessaire.
+   - Site web / Société / Domaine: utilise {user_info.get('site_web')}; si "Société" est demandé, mets "TR ARCHITECTE".
+   - Fonction / Titre / Poste: mets "Client" si requis.
+   - Message / Notes: utilise {user_info.get('message')} ou un court résumé cohérent.
+   - Sélecteurs obligatoires (liste déroulante): choisis la première option raisonnable si aucune préférence explicite.
+   - Cases à cocher obligatoires: coche celles nécessaires pour soumettre.
+   - Dates/Heures: garde le fuseau horaire du calendrier (pas de changement), fais uniquement la conversion mentale vers l'heure d'Europe centrale.
+7. En cas d'erreur de validation, corrige et réessaie jusqu'à 2 fois. Ne t'arrête pas entre les tentatives.
+8. Soumets le formulaire. Si une confirmation est visible → retourne UNIQUEMENT "SUCCESS_RESERVATION". Si après 2 tentatives la soumission reste impossible → retourne UNIQUEMENT "ERREUR_RESERVATION".
 
 CONTRAINTES :
 •	Ne change pas le fuseau horaire du calendrier fait seulement la conversion du décalage horaires entre le fuseau du calendrier et celui d'Europe Central (Paris) 
