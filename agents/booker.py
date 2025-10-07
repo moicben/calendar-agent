@@ -168,6 +168,7 @@ def main(num_calendars: int = 1) -> None:
             task=booking_task,
             llm=ChatOpenAI(model="gpt-5-nano"),
             browser=browser,
+            max_steps=25,
         )
 
         try:
