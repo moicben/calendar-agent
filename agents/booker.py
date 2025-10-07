@@ -200,11 +200,31 @@ def main(num_calendars: int = 1) -> None:
 
         try:
             result = agent.run_sync(max_steps=20)
-            # Le résultat est maintenant un AgentHistoryList, on doit extraire le statut différemment
-            if hasattr(result, 'final_result') and result.final_result:
-                status = result.final_result.get('status', 'ERREUR_RESERVATION')
+            
+            # Debug: afficher la structure du résultat
+            print(f"Type de résultat: {type(result)}")
+            print(f"Attributs du résultat: {dir(result)}")
+            
+            # Le résultat est maintenant une AgentHistoryList, on doit extraire le statut différemment
+            if hasattr(result, 'status'):
+                status = result.status.value
             else:
-                status = 'ERREUR_RESERVATION'
+                # Extraire le statut depuis le dernier élément de l'historique
+                last_step = result[-1] if result else None
+                print(f"Type du dernier step: {type(last_step)}")
+                print(f"Attributs du dernier step: {dir(last_step)}")
+                
+                if last_step and hasattr(last_step, 'status'):
+                    status = last_step.status.value
+                else:
+                    # Fallback: chercher dans les données du dernier step
+                    status = "ERREUR_RESERVATION"  # Valeur par défaut
+                    if result:
+                        last_step = result[-1]
+                        if hasattr(last_step, 'data') and isinstance(last_step.data, dict):
+                            status = last_step.data.get('status', 'ERREUR_RESERVATION')
+                        elif hasattr(last_step, 'result') and isinstance(last_step.result, dict):
+                            status = last_step.result.get('status', 'ERREUR_RESERVATION')
             
             print(f"Résultat de la réservation: {status}")
             
