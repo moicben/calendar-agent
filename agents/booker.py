@@ -6,7 +6,8 @@
 import os
 import random
 from typing import List, Optional
-from browser_use import Agent, ChatOpenAI, Browser, ProxySettings
+from browser_use import Agent, ChatOpenAI, Browser
+from browser_use.browser import ProxySettings
 from dotenv import load_dotenv
 
 # Charger les variables d'environnement
