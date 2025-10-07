@@ -59,3 +59,8 @@ logs/
 # Temporary files
 *.tmp
 *.temp
+
+
+# Calendars
+calendars/booked
+calendars/new

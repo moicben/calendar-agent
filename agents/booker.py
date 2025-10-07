@@ -62,7 +62,13 @@ IMPORTANT :
 """
 
 
-def main() -> None:
+def main(num_calendars: int = 1) -> None:
+    """
+    Fonction principale pour traiter les réservations de calendriers.
+    
+    Args:
+        num_calendars (int): Nombre de calendriers à traiter (par défaut: 1)
+    """
     # Chemins des fichiers
     new_calendars_file = "calendars/new"
     booked_calendars_file = "calendars/booked"
@@ -85,69 +91,100 @@ def main() -> None:
         return
 
     print(f"URLs disponibles: {len(available_urls)}")
+    print(f"Nombre de calendriers à traiter: {num_calendars}")
     
-    # Sélectionner une URL aléatoire
-    selected_url = random.choice(available_urls)
-    print(f"Tentative de réservation sur: {selected_url}")
+    # Limiter le nombre de calendriers à traiter
+    urls_to_process = available_urls[:num_calendars]
+    
+    successful_bookings = 0
+    failed_bookings = 0
+    
+    for i, selected_url in enumerate(urls_to_process, 1):
+        print(f"\n--- Traitement {i}/{len(urls_to_process)} ---")
+        print(f"Tentative de réservation sur: {selected_url}")
 
-    # Configuration Chrome depuis les variables d'environnement
-    chrome_path = os.getenv("CHROME_PATH")
+        # Configuration Chrome depuis les variables d'environnement
+        chrome_path = os.getenv("CHROME_PATH")
 
-    browser = Browser(
-        executable_path=chrome_path,
-        headless=False,
-        devtools=True,
-        enable_default_extensions=False,
-        # user_data_dir="../browseruse-profile",  # Temporairement désactivé
-        args=[
-            "--no-first-run",
-            "--no-default-browser-check",
-            "--disable-background-networking",
-            "--disable-sync",
-            "--disable-dev-shm-usage",  # Important pour VM
-            "--no-sandbox",  # Important pour VM
-            "--disable-gpu",  # Important pour VM
-            "--disable-web-security",
-            "--disable-features=VizDisplayCompositor",
-            "--window-size=1920,1080",
-        ],
-        wait_for_network_idle_page_load_time=3,  # Augmenté de 1 à 3
-        minimum_wait_page_load_time=1,  # Augmenté de 0.5 à 1
-    )
+        browser = Browser(
+            executable_path=chrome_path,
+            headless=False,
+            devtools=True,
+            enable_default_extensions=False,
+            # user_data_dir="../browseruse-profile",  # Temporairement désactivé
+            args=[
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-background-networking",
+                "--disable-sync",
+                "--disable-dev-shm-usage",  # Important pour VM
+                "--no-sandbox",  # Important pour VM
+                "--disable-gpu",  # Important pour VM
+                "--disable-web-security",
+                "--disable-features=VizDisplayCompositor",
+                "--window-size=1920,1080",
+            ],
+            wait_for_network_idle_page_load_time=3,  # Augmenté de 1 à 3
+            minimum_wait_page_load_time=1,  # Augmenté de 0.5 à 1
+        )
 
-    # Créer le prompt de réservation
-    booking_task = create_booking_prompt(selected_url, user_info)
+        # Créer le prompt de réservation
+        booking_task = create_booking_prompt(selected_url, user_info)
 
-    agent = Agent(
-        task=booking_task,
-        llm=ChatOpenAI(model="gpt-4o-mini"),  # Changé de gpt-5-nano à gpt-4o-mini
-        browser=browser,
-    )
+        agent = Agent(
+            task=booking_task,
+            llm=ChatOpenAI(model="gpt-4o-mini"),  # Changé de gpt-5-nano à gpt-4o-mini
+            browser=browser,
+        )
 
-    try:
-        result = agent.run_sync()
-        result_str = str(result).strip()
-        
-        print(f"Résultat de la réservation: {result_str}")
-        
-        # Vérifier si la réservation a réussi
-        if result_str and result_str not in ["AUCUN_CRENEAU_DISPONIBLE", "ERREUR_RESERVATION"]:
-            # Sauvegarder l'URL réservée
-            save_booked_url(selected_url, booked_calendars_file)
-            print("✅ Réservation réussie!")
-        else:
-            print("❌ Réservation échouée ou aucun créneau disponible")
-            
-    except Exception as e:
-        print(f"Erreur lors de l'exécution de l'agent: {e}")
-    finally:
-        # Fermer proprement le browser
         try:
-            browser.close()
-            print("🧹 Browser fermé proprement")
-        except:
-            pass
+            result = agent.run_sync()
+            result_str = str(result).strip()
+            
+            print(f"Résultat de la réservation: {result_str}")
+            
+            # Vérifier si la réservation a réussi
+            if result_str and result_str not in ["AUCUN_CRENEAU_DISPONIBLE", "ERREUR_RESERVATION"]:
+                # Sauvegarder l'URL réservée
+                save_booked_url(selected_url, booked_calendars_file)
+                print("✅ Réservation réussie!")
+                successful_bookings += 1
+            else:
+                print("❌ Réservation échouée ou aucun créneau disponible")
+                failed_bookings += 1
+                
+        except Exception as e:
+            print(f"Erreur lors de l'exécution de l'agent: {e}")
+            failed_bookings += 1
+        finally:
+            # Fermer proprement le browser
+            try:
+                browser.close()
+                print("🧹 Browser fermé proprement")
+            except:
+                pass
+    
+    # Résumé final
+    print(f"\n=== RÉSUMÉ ===")
+    print(f"Réservations réussies: {successful_bookings}")
+    print(f"Réservations échouées: {failed_bookings}")
+    print(f"Total traité: {successful_bookings + failed_bookings}")
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    # Permettre de spécifier le nombre de calendriers via argument en ligne de commande
+    num_calendars = 1
+    if len(sys.argv) > 1:
+        try:
+            num_calendars = int(sys.argv[1])
+            if num_calendars <= 0:
+                print("Le nombre de calendriers doit être positif")
+                sys.exit(1)
+        except ValueError:
+            print("Veuillez fournir un nombre valide")
+            print("Usage: python booker.py [nombre_de_calendriers]")
+            sys.exit(1)
+    
+    main(num_calendars)
