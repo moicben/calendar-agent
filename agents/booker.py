@@ -89,7 +89,7 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
 - ERREUR_RESERVATION
 
 Étapes:
-1) Ouvre {url}. Si page introuvable/404 ou si le widget calendrier (Calendly, cal.com, etc.) ne charge pas → ERREUR_RESERVATION.
+1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt, puis va sur {url}. Si page introuvable/404 ou si le widget calendrier (Calendly, cal.com, etc.) ne charge pas → ERREUR_RESERVATION.
 2) Cherche des créneaux sur les 5 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE.
 3) Sélectionne le premier créneau conforme aux préférences. Ne change jamais le fuseau horaire affiché.
 4) Remplis le formulaire:
