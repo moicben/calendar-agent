@@ -84,10 +84,10 @@ def unique_preserve_order(items: Iterable[str]) -> List[str]:
 def fetch_serper(query: str, api_key: str, endpoint: str, num: int, page: int = 1) -> dict:
     if endpoint == "news":
         url = "https://google.serper.dev/news"
-        payload = {"q": query, "num": num, "page": page}
+        payload = {"q": query, "num": num, "page": page, "gl": "fr", "hl": "fr"}
     else:
         url = "https://google.serper.dev/search"
-        payload = {"q": query, "num": num, "page": page}
+        payload = {"q": query, "num": num, "page": page, "gl": "fr", "hl": "fr"}
 
     headers = {
         "X-API-KEY": api_key,
