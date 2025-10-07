@@ -104,9 +104,15 @@ def main() -> None:
             "--no-default-browser-check",
             "--disable-background-networking",
             "--disable-sync",
+            "--disable-dev-shm-usage",  # Important pour VM
+            "--no-sandbox",  # Important pour VM
+            "--disable-gpu",  # Important pour VM
+            "--disable-web-security",
+            "--disable-features=VizDisplayCompositor",
+            "--window-size=1920,1080",
         ],
-        wait_for_network_idle_page_load_time=1,
-        minimum_wait_page_load_time=0.5,
+        wait_for_network_idle_page_load_time=3,  # Augmenté de 1 à 3
+        minimum_wait_page_load_time=1,  # Augmenté de 0.5 à 1
     )
 
     # Créer le prompt de réservation
@@ -114,7 +120,7 @@ def main() -> None:
 
     agent = Agent(
         task=booking_task,
-        llm=ChatOpenAI(model="gpt-4o-mini"),
+        llm=ChatOpenAI(model="gpt-4o-mini"),  # Changé de gpt-5-nano à gpt-4o-mini
         browser=browser,
     )
 
@@ -134,6 +140,13 @@ def main() -> None:
             
     except Exception as e:
         print(f"Erreur lors de l'exécution de l'agent: {e}")
+    finally:
+        # Fermer proprement le browser
+        try:
+            browser.close()
+            print("🧹 Browser fermé proprement")
+        except:
+            pass
 
 
 if __name__ == "__main__":
