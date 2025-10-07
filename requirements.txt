@@ -1,6 +1,8 @@
 browser-use
 fastapi
 uvicorn[standard]
+selenium
+selenium-wire
 python-dotenv
 requests
 

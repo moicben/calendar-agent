@@ -108,7 +108,7 @@ def main(num_calendars: int = 1) -> None:
 
         # Configuration du proxy HTTPS
         proxy_config = ProxySettings(
-            server='https://geo.g-w.info:10443',
+            server='http://geo.g-w.info:10443',
             username='p8lTvBbFDHV3PtLu',
             password='dajXL25Is4I91Cnm',
             bypass='localhost,127.0.0.1'

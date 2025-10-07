@@ -1,162 +1,265 @@
 #!/usr/bin/env python3
 # coding: utf-8
 """
-Script de test pour vérifier le lancement de Chrome sur Ubuntu VM
-Teste la configuration browser-use avec /usr/bin/google-chrome
+Script de test pour vérifier le lancement de Chrome
+Navigue vers christopeit-sport.fr et attend 30 secondes
 """
 
 import os
 import sys
 import time
-from browser_use import Browser, Agent, ChatOpenAI
+import json
+import tempfile
+import os.path
+import base64
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from dotenv import load_dotenv
 
 # Charger les variables d'environnement
 load_dotenv()
 
-def test_chrome_installation():
-    """Teste si Chrome est installé et accessible."""
-    chrome_paths = [
-        "/usr/bin/google-chrome",
-        "/usr/bin/google-chrome-stable", 
-        "/usr/bin/chromium-browser",
-        "/snap/bin/chromium"
-    ]
-    
-    print("🔍 Vérification de l'installation Chrome...")
-    
-    for path in chrome_paths:
-        if os.path.exists(path):
-            print(f"✅ Chrome trouvé: {path}")
-            return path
-    
-    print("❌ Chrome non trouvé dans les chemins standards")
-    print("💡 Installez Chrome avec:")
-    print("   wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -")
-    print("   echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' | sudo tee /etc/apt/sources.list.d/google-chrome.list")
-    print("   sudo apt update && sudo apt install google-chrome-stable")
-    return None
+def build_proxy_auth_extension(host: str, port: int, username: str, password: str, scheme: str = "https") -> str:
+    """Crée une extension Chrome MV3 (non zippée) qui configure le proxy + auth.
+    Retourne le chemin du dossier de l'extension à passer à --load-extension.
+    """
+    manifest = {
+        "manifest_version": 3,
+        "name": "Proxy Auth Helper",
+        "version": "1.0",
+        "permissions": [
+            "proxy",
+            "storage",
+            "webRequest",
+            "webRequestBlocking",
+            "webRequestAuthProvider"
+        ],
+        "host_permissions": ["<all_urls>"],
+        "background": {"service_worker": "background.js"}
+    }
 
-def test_browser_launch(chrome_path):
-    """Teste le lancement du navigateur."""
-    print(f"\n🚀 Test de lancement Chrome: {chrome_path}")
+    background_js = f"""
+async function applyProxy() {{
+  try {{
+    await chrome.proxy.settings.set({{
+      value: {{
+        mode: "fixed_servers",
+        rules: {{ singleProxy: {{ scheme: "{scheme}", host: "{host}", port: {port} }} }}
+      }},
+      scope: "regular"
+    }});
+    console.log('Proxy settings applied');
+  }} catch (e) {{
+    console.error('Failed to apply proxy', e);
+  }}
+}}
+
+applyProxy();
+chrome.runtime.onStartup.addListener(applyProxy);
+chrome.runtime.onInstalled.addListener(applyProxy);
+
+chrome.webRequest.onAuthRequired.addListener(
+  (details, callback) => callback({{ authCredentials: {{ username: "{username}", password: "{password}" }} }}),
+  {{ urls: ["<all_urls>"] }},
+  ["blocking"]
+);
+"""
+
+    ext_dir = tempfile.mkdtemp(prefix="proxy_ext_")
+    with open(os.path.join(ext_dir, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump(manifest, f)
+    with open(os.path.join(ext_dir, "background.js"), "w", encoding="utf-8") as f:
+        f.write(background_js)
+    return ext_dir
+
+def get_chrome_path():
+    """Récupère le chemin Chrome depuis CHROME_PATH."""
+    chrome_path = os.getenv("CHROME_PATH")
+    
+    print("🔍 Vérification de CHROME_PATH...")
+    
+    if not chrome_path:
+        print("❌ CHROME_PATH non définie dans .env")
+        print("💡 Ajoutez CHROME_PATH=/chemin/vers/chrome dans votre fichier .env")
+        return None
+    
+    if not os.path.exists(chrome_path):
+        print(f"❌ Chrome non trouvé à: {chrome_path}")
+        print("💡 Vérifiez que le chemin dans CHROME_PATH est correct")
+        return None
+    
+    print(f"✅ Chrome trouvé: {chrome_path}")
+    return chrome_path
+
+def launch_chrome_with_proxy():
+    """Lance Chrome avec configuration proxy."""
+    print(f"\n🚀 Lancement Chrome...")
     
     try:
-        browser = Browser(
-            executable_path=chrome_path,
-            headless=False,  # Mode graphique pour voir le navigateur
-            devtools=True,
-            enable_default_extensions=False,
-            args=[
-                "--no-first-run",
-                "--no-default-browser-check",
-                "--disable-background-networking",
-                "--disable-sync",
-                "--disable-dev-shm-usage",  # Important pour VM
-                "--no-sandbox",  # Important pour VM
-                "--disable-gpu",  # Important pour VM
-                "--disable-web-security",
-                "--disable-features=VizDisplayCompositor",
-                "--window-size=1920,1080",
-            ],
-            wait_for_network_idle_page_load_time=3,
-            minimum_wait_page_load_time=1,
-        )
+        # Configuration Chrome
+        chrome_options = Options()
+        chrome_options.add_argument("--no-first-run")
+        chrome_options.add_argument("--no-default-browser-check")
+        chrome_options.add_argument("--disable-background-networking")
+        chrome_options.add_argument("--disable-sync")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--disable-web-security")
+        chrome_options.add_argument("--disable-features=VizDisplayCompositor")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--disable-extensions")
+        chrome_options.add_argument("--disable-plugins")
+        chrome_options.add_argument("--disable-images")
         
-        print("✅ Browser configuré avec succès")
-        return browser
+        chrome_options.add_argument("--proxy-bypass-list=<-loopback>")
+        chrome_options.add_argument("--ignore-certificate-errors")
+        chrome_options.add_argument("--disable-quic")
+        chrome_options.add_argument("--dns-prefetch-disable")
+        chrome_options.add_argument("--disable-async-dns")
+        # Forcer WebRTC via proxy (évite les fuites d'IP locales)
+        chrome_options.add_argument("--force-webrtc-ip-handling-policy=disable_non_proxied_udp")
+        chrome_options.add_argument("--webrtc-ip-handling-policy=disable_non_proxied_udp")
+        chrome_options.add_argument("--enable-features=WebRtcHideLocalIpsWithMdns")
+
+        # Extension d'authentification proxy
+        proxy_zip = build_proxy_auth_extension(
+            host="geo.g-w.info",
+            port=10443,
+            username="p8lTvBbFDHV3PtLu",
+            password="dajXL25Is4I91Cnm",
+            scheme="https"
+        )
+        chrome_options.add_argument(f"--load-extension={proxy_zip}")
+        
+        print("📋 Configuration Chrome appliquée...")
+        
+        # Lancer Chrome
+        print("🔧 Lancement du driver Chrome...")
+        driver = webdriver.Chrome(options=chrome_options)
+        
+        print("✅ Chrome lancé avec succès")
+        print(f"📄 URL actuelle: {driver.current_url}")
+        return driver
         
     except Exception as e:
-        print(f"❌ Erreur lors de la configuration du browser: {e}")
+        print(f"❌ Erreur lors du lancement de Chrome: {e}")
+        print(f"🔍 Type d'erreur: {type(e).__name__}")
         return None
 
-def test_page_navigation(browser):
-    """Teste la navigation vers une page simple."""
-    print("\n🌐 Test de navigation...")
+def navigate_and_wait(driver):
+    """Navigue vers mylocation.org, vérifie le pays et attend 30 secondes."""
+    print("\n🌐 Navigation vers mylocation.org...")
     
     try:
-        # Test simple - vérifier que le browser est opérationnel
-        print("✅ Browser opérationnel - navigation testée via Agent")
-        return True
-            
-    except Exception as e:
-        print(f"❌ Erreur lors du test de navigation: {e}")
-        return False
+        # Aller sur le site
+        print("🔗 Chargement de https://www.mylocation.org...")
+        driver.get("https://www.mylocation.org")
+        
+        print("⏳ Attente de 8 secondes pour le chargement...")
+        time.sleep(8)
+        
+        current_url = driver.current_url
+        page_title = driver.title
+        print(f"✅ Navigation réussie")
+        print(f"📄 URL actuelle: {current_url}")
+        print(f"📝 Titre de la page: {page_title}")
 
-def test_agent_creation(browser):
-    """Teste la création d'un agent simple."""
-    print("\n🤖 Test de création d'agent...")
-    
-    try:
-        # Vérifier la clé API OpenAI
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            print("❌ OPENAI_API_KEY non définie dans .env")
-            return False
-        
-        print("✅ Clé API OpenAI trouvée")
-        
-        # Créer un agent simple avec browser
-        agent = Agent(
-            task="Va sur https://httpbin.org/get et retourne 'TEST_REUSSI'",
-            llm=ChatOpenAI(model="gpt-4o-mini"),  # Modèle valide
-            browser=browser,
-        )
-        
-        print("✅ Agent créé avec succès")
-        
-        # Test rapide de l'agent
-        print("🧪 Test rapide de l'agent...")
-        result = agent.run_sync()
-        result_str = str(result).strip()
-        
-        if "TEST_REUSSI" in result_str or "httpbin" in result_str.lower():
-            print("✅ Agent fonctionne correctement")
-            return True
+        # Essayer de lire le pays depuis la page
+        country_text = None
+        try:
+            country_text = driver.execute_script(
+                "const el = document.querySelector('#mycountry, .country, [data-country]'); return el ? (el.innerText || el.textContent || el.getAttribute('data-country')) : '';"
+            )
+        except Exception:
+            pass
+        if country_text:
+            print(f"📍 Pays détecté: {country_text.strip()}")
         else:
-            print(f"⚠️ Agent fonctionne mais résultat inattendu: {result_str}")
-            return True  # Considéré comme succès car l'agent fonctionne
-            
+            print("⚠️ Impossible de lire le pays depuis le DOM")
+        
+        # Vérifier via API IP (ipapi)
+        print("🔎 Verification pays via https://ipapi.co/json/ ...")
+        try:
+            js = """
+const done = arguments[0];
+fetch('https://ipapi.co/json/')
+  .then(r => r.json())
+  .then(d => done(JSON.stringify(d)))
+  .catch(e => done(JSON.stringify({error: String(e)})));
+"""
+            raw = driver.execute_async_script(js)
+            data = json.loads(raw) if isinstance(raw, str) else raw
+            if isinstance(data, dict):
+                country_name = data.get('country_name') or data.get('country') or ''
+                ip_addr = data.get('ip') or ''
+                print(f"🌍 IP détectée: {ip_addr}")
+                print(f"📍 Pays API: {country_name}")
+                if isinstance(country_name, str) and country_name.strip().lower() in ("france", "fr"):
+                    print("✅ Vérification: le pays est France")
+                else:
+                    print("⚠️ Vérification: le pays n'est pas France")
+            else:
+                print(f"⚠️ Réponse API inattendue: {data}")
+        except Exception as api_e:
+            print(f"⚠️ Échec vérification API: {api_e}")
+
+        # Attendre 30 secondes pour inspection manuelle
+        print("⏳ Attente de 30 secondes...")
+        time.sleep(30)
+        print("✅ Attente terminée")
+        
+        return True
+        
     except Exception as e:
-        print(f"❌ Erreur lors de la création de l'agent: {e}")
+        print(f"❌ Erreur lors de la navigation: {e}")
+        print(f"🔍 Type d'erreur: {type(e).__name__}")
         return False
 
 def main():
     """Fonction principale de test."""
-    print("🧪 Test de configuration browser-use pour Ubuntu VM")
+    print("🧪 Test Chrome avec navigation vers christopeit-sport.fr")
     print("=" * 60)
     
-    # Test 1: Installation Chrome
-    chrome_path = test_chrome_installation()
-    if not chrome_path:
-        sys.exit(1)
-    
-    # Test 2: Lancement Browser
-    browser = test_browser_launch(chrome_path)
-    if not browser:
-        sys.exit(1)
-    
-    # Test 3: Navigation
-    nav_success = test_page_navigation(browser)
-    if not nav_success:
-        print("⚠️ Navigation échouée, mais browser fonctionne")
-    
-    # Test 4: Création Agent
-    agent_success = test_agent_creation(browser)
-    if not agent_success:
-        print("⚠️ Agent non testé, vérifiez OPENAI_API_KEY")
-    
-    # Nettoyage
     try:
-        browser.close()
-        print("\n🧹 Browser fermé proprement")
-    except:
-        pass
-    
-    print("\n" + "=" * 60)
-    print("✅ Tests terminés!")
-    print(f"💡 Utilisez ce chemin Chrome dans votre .env: CHROME_PATH={chrome_path}")
-    print("💡 Modèle recommandé: gpt-4o-mini")
+        # Récupérer le chemin Chrome
+        print("🔍 Étape 1: Récupération du chemin Chrome...")
+        chrome_path = get_chrome_path()
+        if not chrome_path:
+            print("❌ Échec de récupération du chemin Chrome")
+            sys.exit(1)
+        
+        # Lancer Chrome avec proxy
+        print("🚀 Étape 2: Lancement de Chrome...")
+        driver = launch_chrome_with_proxy()
+        if not driver:
+            print("❌ Échec du lancement de Chrome")
+            sys.exit(1)
+        
+        # Naviguer et attendre
+        print("🌐 Étape 3: Navigation vers le site...")
+        nav_success = navigate_and_wait(driver)
+        if not nav_success:
+            print("⚠️ Navigation échouée")
+        
+        # Nettoyage
+        print("🧹 Étape 4: Nettoyage...")
+        try:
+            driver.quit()
+            print("✅ Chrome fermé proprement")
+        except Exception as e:
+            print(f"⚠️ Erreur lors de la fermeture: {e}")
+        
+        print("\n" + "=" * 60)
+        print("✅ Test terminé!")
+        print("🌐 Proxy utilisé: geo.g-w.info:10443")
+        
+    except Exception as e:
+        print(f"❌ Erreur générale: {e}")
+        print(f"🔍 Type d'erreur: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main()
