@@ -7,6 +7,10 @@ import os
 import random
 from typing import List, Optional
 from browser_use import Agent, ChatOpenAI, Browser
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement
+load_dotenv()
 
 
 def load_calendar_urls(file_path: str) -> List[str]:
@@ -86,8 +90,8 @@ def main() -> None:
     selected_url = random.choice(available_urls)
     print(f"Tentative de réservation sur: {selected_url}")
 
-    # Configuration Chrome local (macOS)
-    chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    # Configuration Chrome depuis les variables d'environnement
+    chrome_path = os.getenv("CHROME_PATH")
 
     browser = Browser(
         executable_path=chrome_path,
