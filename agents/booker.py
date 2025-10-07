@@ -144,7 +144,6 @@ def main(num_calendars: int = 1) -> None:
 
         # Sélectionner un proxy aléatoire pour ce calendrier
         selected_proxy = get_random_proxy(available_proxies)
-        proxy_url = f"http://{selected_proxy['username']}:{selected_proxy['password']}@{selected_proxy['host']}:{selected_proxy['port']}"
         print(f"Proxy utilisé: {selected_proxy['host']}:{selected_proxy['port']}")
 
         # Configuration Chrome depuis les variables d'environnement
@@ -156,7 +155,11 @@ def main(num_calendars: int = 1) -> None:
             devtools=True,
             enable_default_extensions=False,
             # user_data_dir="../browseruse-profile",  # Temporairement désactivé
-            proxy=proxy_url,
+            proxy={
+                "server": f"http://{selected_proxy['host']}:{selected_proxy['port']}",
+                "username": selected_proxy['username'],
+                "password": selected_proxy['password']
+            },
             args=[
                 "--no-first-run",
                 "--no-default-browser-check",
