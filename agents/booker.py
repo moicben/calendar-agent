@@ -155,7 +155,7 @@ def main(num_calendars: int = 1) -> None:
                 "--disable-gpu",  # Important pour VM
                 "--disable-web-security",
                 "--disable-features=VizDisplayCompositor",
-                "--window-size=1920,1080",
+                "--window-size=960,1080",
             ],
             wait_for_network_idle_page_load_time=3,  # Augmenté de 1 à 3
             minimum_wait_page_load_time=1,  # Augmenté de 0.5 à 1
