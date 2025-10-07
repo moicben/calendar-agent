@@ -5,7 +5,7 @@
 
 import os
 import random
-from typing import List, Optional
+from typing import List, Optional, Dict
 from browser_use import Agent, ChatOpenAI, Browser
 from dotenv import load_dotenv
 
@@ -22,6 +22,36 @@ def load_calendar_urls(file_path: str) -> List[str]:
     except FileNotFoundError:
         print(f"Fichier {file_path} non trouvé")
         return []
+
+
+def load_proxies(file_path: str) -> List[Dict[str, str]]:
+    """Charge les proxies depuis le fichier proxies."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            proxies = []
+            for line in f.readlines():
+                line = line.strip()
+                if line and ':' in line:
+                    parts = line.split(':')
+                    if len(parts) >= 4:
+                        host, port, username, password = parts[0], parts[1], parts[2], parts[3]
+                        proxies.append({
+                            'host': host,
+                            'port': port,
+                            'username': username,
+                            'password': password
+                        })
+        return proxies
+    except FileNotFoundError:
+        print(f"Fichier {file_path} non trouvé")
+        return []
+
+
+def get_random_proxy(proxies: List[Dict[str, str]]) -> Optional[Dict[str, str]]:
+    """Retourne un proxy aléatoire depuis la liste."""
+    if not proxies:
+        return None
+    return random.choice(proxies)
 
 
 def save_booked_url(url: str, booked_file: str) -> None:
@@ -72,6 +102,7 @@ def main(num_calendars: int = 1) -> None:
     # Chemins des fichiers
     new_calendars_file = "calendars/new"
     booked_calendars_file = "calendars/booked"
+    proxies_file = "proxies"
     
     # Informations de réservation (à personnaliser selon vos besoins)
     user_info = {
@@ -90,7 +121,15 @@ def main(num_calendars: int = 1) -> None:
         print("Aucune URL de calendrier disponible dans calendars/new")
         return
 
+    # Charger les proxies disponibles
+    available_proxies = load_proxies(proxies_file)
+    
+    if not available_proxies:
+        print("Aucun proxy disponible dans proxies")
+        return
+
     print(f"URLs disponibles: {len(available_urls)}")
+    print(f"Proxies disponibles: {len(available_proxies)}")
     print(f"Nombre de calendriers à traiter: {num_calendars}")
     
     # Limiter le nombre de calendriers à traiter
@@ -103,6 +142,11 @@ def main(num_calendars: int = 1) -> None:
         print(f"\n--- Traitement {i}/{len(urls_to_process)} ---")
         print(f"Tentative de réservation sur: {selected_url}")
 
+        # Sélectionner un proxy aléatoire pour ce calendrier
+        selected_proxy = get_random_proxy(available_proxies)
+        proxy_url = f"http://{selected_proxy['username']}:{selected_proxy['password']}@{selected_proxy['host']}:{selected_proxy['port']}"
+        print(f"Proxy utilisé: {selected_proxy['host']}:{selected_proxy['port']}")
+
         # Configuration Chrome depuis les variables d'environnement
         chrome_path = os.getenv("CHROME_PATH")
 
@@ -112,6 +156,7 @@ def main(num_calendars: int = 1) -> None:
             devtools=True,
             enable_default_extensions=False,
             # user_data_dir="../browseruse-profile",  # Temporairement désactivé
+            proxy=proxy_url,
             args=[
                 "--no-first-run",
                 "--no-default-browser-check",
