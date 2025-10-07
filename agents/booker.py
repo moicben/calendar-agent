@@ -114,7 +114,7 @@ def main() -> None:
 
     agent = Agent(
         task=booking_task,
-        llm=ChatOpenAI(model="gpt-5-nano"),
+        llm=ChatOpenAI(model="gpt-4o-mini"),
         browser=browser,
     )
 
