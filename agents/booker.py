@@ -61,9 +61,9 @@ def remove_url_from_new(url: str, new_file: str) -> None:
             with open(new_file, 'w', encoding='utf-8') as f:
                 for remaining_url in urls:
                     f.write(f"{remaining_url}\n")
-            print(f"URL retirée de calendars/proceed: {url}")
+            print(f"URL retirée de calendars/proceed.txt: {url}")
         else:
-            print(f"URL non trouvée dans calendars/proceed: {url}")
+            print(f"URL non trouvée dans calendars/proceed.txt: {url}")
     except Exception as e:
         print(f"Erreur lors de la suppression de l'URL: {e}")
 
@@ -120,7 +120,7 @@ def main(num_calendars: int = 1) -> None:
         num_calendars (int): Nombre de calendriers à traiter (par défaut: 1)
     """
     # Chemins des fichiers
-    new_calendars_file = "calendars/proceed"
+    new_calendars_file = "calendars/proceed.txt"
     booked_calendars_file = "calendars/booked"
     
     # Informations de réservation (à personnaliser selon vos besoins)
@@ -139,7 +139,7 @@ def main(num_calendars: int = 1) -> None:
     available_urls = load_calendar_urls(new_calendars_file)
     
     if not available_urls:
-        print("Aucune URL de calendrier disponible dans calendars/proceed")
+        print("Aucune URL de calendrier disponible dans calendars/proceed.txt")
         return
 
     print(f"URLs disponibles: {len(available_urls)}")
@@ -231,7 +231,7 @@ def main(num_calendars: int = 1) -> None:
             
             # Déplacer l'URL vers booked dans tous les cas
             save_booked_url(selected_url, booked_calendars_file)
-            # Retirer l'URL de calendars/proceed
+            # Retirer l'URL de calendars/proceed.txt
             remove_url_from_new(selected_url, new_calendars_file)
             
             # Vérifier si la réservation a réussi
@@ -246,7 +246,7 @@ def main(num_calendars: int = 1) -> None:
             print(f"Erreur lors de l'exécution de l'agent: {e}")
             # Déplacer l'URL vers booked même en cas d'erreur
             save_booked_url(selected_url, booked_calendars_file)
-            # Retirer l'URL de calendars/proceed même en cas d'erreur
+            # Retirer l'URL de calendars/proceed.txt même en cas d'erreur
             remove_url_from_new(selected_url, new_calendars_file)
             failed_bookings += 1
         finally:
