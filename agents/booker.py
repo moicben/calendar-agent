@@ -61,9 +61,9 @@ def remove_url_from_new(url: str, new_file: str) -> None:
             with open(new_file, 'w', encoding='utf-8') as f:
                 for remaining_url in urls:
                     f.write(f"{remaining_url}\n")
-            print(f"URL retirée de calendars/new: {url}")
+            print(f"URL retirée de calendars/proceed: {url}")
         else:
-            print(f"URL non trouvée dans calendars/new: {url}")
+            print(f"URL non trouvée dans calendars/proceed: {url}")
     except Exception as e:
         print(f"Erreur lors de la suppression de l'URL: {e}")
 
@@ -91,9 +91,10 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
 Étapes:
 1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt, puis va sur {url}. Si page introuvable/404 ou si le widget calendrier (Calendly, cal.com, etc.) ne charge pas → ERREUR_RESERVATION.
 2) Cherche des créneaux sur les 5 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE.
-3) Sélectionne le premier créneau conforme aux préférences. Ne change jamais le fuseau horaire affiché.
+3) Sélectionne le premier jour disponible dans le calendrier conforme aux préférences (généralement couleur plus visible ou contraste plus élevé).
+4) Sélectionner le premier créneau horaire disponible dans le jour sélectionné.
 4) Remplis le formulaire:
-   - Nom: {user_info.get('nom')}
+   - Nom complet: {user_info.get('nom')}
    - Email: {user_info.get('email')}
    - Téléphone: {user_info.get('telephone')} (adapter le format si requis)
    - Site/Société: {user_info.get('site_web')} / {user_info.get('societe')}
@@ -101,7 +102,7 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
    - Listes déroulantes obligatoires: première option raisonnable.
    - Cases à cocher obligatoires: cocher.
    - Type de RDV: {user_info.get('type_rdv')}
-5) En cas d'erreur de validation, corrige puis réessaie jusqu'à 2 fois.
+5) En cas d'erreur de validation, corrige puis réessaie jusqu'à 3 fois.
 6) Soumets. Si confirmation visible → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION.
 
 Contraintes:
@@ -119,7 +120,7 @@ def main(num_calendars: int = 1) -> None:
         num_calendars (int): Nombre de calendriers à traiter (par défaut: 1)
     """
     # Chemins des fichiers
-    new_calendars_file = "calendars/new"
+    new_calendars_file = "calendars/proceed"
     booked_calendars_file = "calendars/booked"
     
     # Informations de réservation (à personnaliser selon vos besoins)
@@ -129,7 +130,7 @@ def main(num_calendars: int = 1) -> None:
         "telephone": "+447446162797",
         "site_web": "www.tr-architecte.fr",
         "societe": "TR ARCHITECTE",
-        "preference_creneau": "Premier créneau disponible dans les 5 prochains jours",
+        "preference_creneau": "Premier créneau disponible à partir de demain dans les 5 prochains jours",
         "type_rdv": "Visionconférence Google Meet",
         "message": "Dans le cadre de la création de notre nouveau site, et l'update de nos réseaux. Je cherche un(e) expert(e) fiable pour m'accompagner sur la création et mise en forme de contenus. TR-ARCHITECTE.FR\nMerci, Thibault Ressy"
     }
@@ -138,7 +139,7 @@ def main(num_calendars: int = 1) -> None:
     available_urls = load_calendar_urls(new_calendars_file)
     
     if not available_urls:
-        print("Aucune URL de calendrier disponible dans calendars/new")
+        print("Aucune URL de calendrier disponible dans calendars/proceed")
         return
 
     print(f"URLs disponibles: {len(available_urls)}")
@@ -230,7 +231,7 @@ def main(num_calendars: int = 1) -> None:
             
             # Déplacer l'URL vers booked dans tous les cas
             save_booked_url(selected_url, booked_calendars_file)
-            # Retirer l'URL de calendars/new
+            # Retirer l'URL de calendars/proceed
             remove_url_from_new(selected_url, new_calendars_file)
             
             # Vérifier si la réservation a réussi
@@ -245,7 +246,7 @@ def main(num_calendars: int = 1) -> None:
             print(f"Erreur lors de l'exécution de l'agent: {e}")
             # Déplacer l'URL vers booked même en cas d'erreur
             save_booked_url(selected_url, booked_calendars_file)
-            # Retirer l'URL de calendars/new même en cas d'erreur
+            # Retirer l'URL de calendars/proceed même en cas d'erreur
             remove_url_from_new(selected_url, new_calendars_file)
             failed_bookings += 1
         finally:
