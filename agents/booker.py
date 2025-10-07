@@ -72,17 +72,21 @@ INFORMATIONS DE RÉSERVATION :
 INSTRUCTIONS :
 1. Va sur la page {url}
 2. Vérifie si le calendrier est disponible et s'il y a des créneaux sur les 5 prochains jours
-3. Si aucun créneau n'est disponible, retourne "AUCUN_CRENEAU_DISPONIBLE" ou "ERREUR_RESERVATION" et arrête le processus.
-4. Trouve le premier créneau disponible qui correspond aux préférences (sans changer le fuseau horaire)
+3. CONTRÔLES D'ARRÊT IMMÉDIAT (ne pas continuer si l'une des conditions est vraie) :
+   3.1. Si la page affiche « Page not found », « Not Found », « page introuvable », un code 404, ou un gabarit d'erreur → retourne UNIQUEMENT "ERREUR_RESERVATION" et ARRÊTE IMMÉDIATEMENT.
+   3.2. Si le widget calendrier ne se charge pas (iframe/éléments Calendly/cal.com absents, chargement infini > 10 secondes, erreurs visibles) → retourne UNIQUEMENT "ERREUR_RESERVATION" et ARRÊTE IMMÉDIATEMENT.
+   3.3. S'il n'y a AUCUNE disponibilité (aucun créneau affiché sur les 5 prochains jours ou message d'indisponibilité) → retourne UNIQUEMENT "AUCUN_CRENEAU_DISPONIBLE" et ARRÊTE IMMÉDIATEMENT.
+4. Si aucune condition d'arrêt n'est déclenchée, trouve le premier créneau disponible qui correspond aux préférences (sans changer le fuseau horaire)
 5. Remplis le formulaire avec les informations fournies
 6. Confirme la réservation
-7. Une fois la réservation confirmée, retourne "SUCCESS_RESERVATION"
+7. Une fois la réservation confirmée, retourne UNIQUEMENT "SUCCESS_RESERVATION"
 
 CONTRAINTES :
 •	Ne change pas le fuseau horaire du calendrier fait seulement la conversion du décalage horaires entre le fuseau du calendrier et celui d'Europe Central (Paris) 
 •	N'attends pas de confirmation explicite avant de valider une réservation, tu es 100% autonome.
-•	Retourne "SUCCESS_RESERVATION" si la réservation a réussi.
-•	Retourne "ERREUR_RESERVATION" en cas d’erreur technique.
+•	Tu DOIS t'arrêter immédiatement dès qu'une des conditions d'arrêt du point 3 est détectée.
+•	Retourne UNIQUEMENT l'une de ces valeurs finales: "SUCCESS_RESERVATION", "AUCUN_CRENEAU_DISPONIBLE", "ERREUR_RESERVATION".
+•	N'essaie pas de contourner une indisponibilité ou une erreur par des navigations ou des rafraîchissements supplémentaires.
 """
 
 
@@ -166,7 +170,7 @@ def main(num_calendars: int = 1) -> None:
 
         agent = Agent(
             task=booking_task,
-            llm=ChatOpenAI(model="gpt-5-nano"),
+            llm=ChatOpenAI(model="gpt-4o-mini"),
             browser=browser,
             max_steps=20,
         )
