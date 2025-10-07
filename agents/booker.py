@@ -98,7 +98,7 @@ def main() -> None:
         headless=False,
         devtools=True,
         enable_default_extensions=False,
-        user_data_dir="../browseruse-profile",
+        # user_data_dir="../browseruse-profile",  # Temporairement désactivé
         args=[
             "--no-first-run",
             "--no-default-browser-check",
