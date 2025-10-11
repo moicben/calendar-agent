@@ -171,7 +171,7 @@ def main(num_calendars: int = 1) -> None:
         "telephone": "+447446162797",
         "site_web": "onaa.notaires.fr",
         "societe": "ONA(A) NOTAIRES",
-        "preference_creneau": "Premier créneau disponible à partir de Lundi dans les 5 prochains jours",
+        "preference_creneau": "Premier créneau disponible à partir de Lundi dans les 7 prochains jours'",
         "type_rdv": "Visionconférence Google Meet",
         "message": "Dans le cadre de la création de notre nouveau site, et l'update de nos réseaux. Nous cherchons un(e) expert(e) fiable pour nous conseiller et/ou nous accompagner sur la création et mise en forme des interfaces et contenus. ONA(A) NOTAIRES.FR\nMerci, Bertrand David"
     }
