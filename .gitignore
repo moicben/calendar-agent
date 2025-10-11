@@ -62,5 +62,6 @@ logs/
 
 
 # Calendars
-# calendars/booked
-# calendars/new
+ calendars/booked
+ calendars/new
+ calendars/proceed.txt
