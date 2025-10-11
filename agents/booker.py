@@ -150,6 +150,7 @@ Contraintes:
 - N'essaie pas de forcer une disponibilité via refresh/navigation annexe.
 - Si visioconférence ou appel téléphone choisir visioconférence (Google Meet de préférence).
 - Dans le message/Notes du RDV utiliser des retours en appui de "Entrer" pour chaque ligne de texte.
+- Si champ avec demande d'informations complèmentaires ou autres champs similaires, se servir de {user_info.get('message')}
 """
 
 
@@ -171,7 +172,7 @@ def main(num_calendars: int = 1) -> None:
         "telephone": "+447446162797",
         "site_web": "onaa.notaires.fr",
         "societe": "ONA(A) NOTAIRES",
-        "preference_creneau": "Premier créneau disponible à partir de Lundi dans les 7 prochains jours'",
+        "preference_creneau": "Premier créneau disponible à partir de Lundi dans les 7 prochains jours",
         "type_rdv": "Visionconférence Google Meet",
         "message": "Dans le cadre de la création de notre nouveau site, et l'update de nos réseaux. Nous cherchons un(e) expert(e) fiable pour nous conseiller et/ou nous accompagner sur la création et mise en forme des interfaces et contenus. ONA(A) NOTAIRES.FR\nMerci, Bertrand David"
     }
