@@ -128,7 +128,7 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
 - ERREUR_RESERVATION
 
 Étapes:
-1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt, puis va sur {url}. Si page introuvable/404 ou si le widget calendrier (Calendly, cal.com, etc.) ne charge pas → ERREUR_RESERVATION.
+1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt, puis va sur {url}. Si page introuvable/404 ou si le widget calendrier (Calendly, cal.com, Google Calendar etc.) ne charge pas → ERREUR_RESERVATION.
 2) Cherche des créneaux sur les 5 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE.
 3) Sélectionne le premier jour disponible dans le calendrier conforme aux préférences (généralement couleur plus visible ou contraste plus élevé).
 4) Sélectionner le premier créneau horaire disponible dans le jour sélectionné.
@@ -168,8 +168,8 @@ def main(num_calendars: int = 1) -> None:
     # Informations de réservation (à personnaliser selon vos besoins)
     user_info = {
         "nom": "Bertrand David",
-        "email": "carbone.developpement@gmail.com", 
-        "telephone": "+447446162797",
+        "email": "lexpertise.notariale@gmail.com", 
+        "telephone": "+447832482622",
         "site_web": "onaa.notaires.fr",
         "societe": "ONA(A) NOTAIRES",
         "preference_creneau": "Premier créneau disponible à partir de Lundi dans les 7 prochains jours",
