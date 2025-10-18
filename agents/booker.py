@@ -3,6 +3,9 @@
 # Utilise les URLs de calendars/new pour réserver des créneaux
 # Sauvegarde les URLs réservées dans calendars/booked
 
+
+# EXEMPLE CLI : python3 agents/booker.py 
+
 import os
 import random
 from typing import List, Optional
@@ -201,14 +204,14 @@ def main(num_calendars: int = 1) -> None:
         chrome_path = os.getenv("CHROME_PATH")
 
         # Configuration du proxy aléatoire
-        proxy_config = load_random_proxy()
+        #proxy_config = load_random_proxy()
 
         browser = Browser(
             executable_path=chrome_path,
             headless=False,
             devtools=True,
             enable_default_extensions=False,
-            proxy=proxy_config,
+            #proxy=proxy_config,
             # user_data_dir="../browseruse-profile",  # Temporairement désactivé
             args=[
                 "--no-first-run",
