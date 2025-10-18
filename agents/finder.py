@@ -111,9 +111,9 @@ def extract_calendar_urls_from_snippet(snippet: str) -> List[str]:
     
     # Pattern pour détecter les URLs de calendriers (avec ou sans protocole, avec ou sans www)
     calendar_patterns = [
-        #r'(?:https?://)?(?:www\.)?calendly\.com/[^\s<>"\']+',
-        #r'(?:https?://)?(?:www\.)?cal\.com/[^\s<>"\']+',
-        r'(?:https?://)?(?:www\.)?calendar\.app\.google/[^\s<>"\']+',
+        r'(?:https?://)?(?:www\.)?calendly\.com/[^\s<>"\']+',
+        r'(?:https?://)?(?:www\.)?cal\.com/[^\s<>"\']+',
+        #r'(?:https?://)?(?:www\.)?calendar\.app\.google/[^\s<>"\']+',
     ]
     
     urls = []

@@ -5,4 +5,5 @@ selenium
 selenium-wire
 python-dotenv
 requests
+playwright
 
