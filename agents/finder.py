@@ -9,6 +9,8 @@ from typing import Iterable, List, Set
 import requests
 from dotenv import load_dotenv
 
+# NE PAS UTILISER EN LOCAL CELA BUG
+# EXEMPLE : python3 agents/finder.py "expert seo" --num 15 (pages) [--verbose]
 
 def configure_logging(verbose: bool) -> None:
     level = logging.DEBUG if verbose else logging.INFO
