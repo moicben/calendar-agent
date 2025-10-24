@@ -4,7 +4,7 @@
 # Sauvegarde les URLs réservées dans calendars/booked
 
 
-# EXEMPLE CLI : python3 agents/booker.py 
+# EXEMPLE CLI : python3 agents/booker.py 10 (calendriers)
 
 import os
 import random
@@ -170,7 +170,7 @@ def main(num_calendars: int = 1) -> None:
     
     # Informations de réservation (à personnaliser selon vos besoins)
     user_info = {
-        "nom": "Cyril Nirious",
+        "nom": "Cyril Moriou",
         "email": "lexpertisedunotaire@gmail.com", 
         "telephone": "+33774334897",
         "site_web": "etude-lyon-bugeaud.notaires.fr",
