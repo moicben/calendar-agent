@@ -177,7 +177,7 @@ def main(num_calendars: int = 1) -> None:
         "societe": "Étude Lyon Bugeaud",
         "preference_creneau": "Premier créneau disponible dès demain dans les 7 prochains jours",
         "type_rdv": "Visio-conférence Google Meet",
-        "message": "Dans le cadre du lancement de notre stratégie de commnunication, et l'update de nos réseaux. Nous cherchons un(e) expert(e) fiable pour nous conseiller et/ou nous accompagner sur la création et mise en forme des contenus. \n Au plaisir d'en discuter.\nMerci,"
+        "message": "Dans le cadre du (re)lancement de notre stratégie de comm, et l'update de nos réseaux (TikTok / Instagram). Votre profil nous semble correspondre à nos besoins, pour nous accompagner sur la mise en forme de tout cela. \n Au plaisir d'en discuter.\nMerci,"
     }
 
     # Charger les URLs disponibles
