@@ -349,7 +349,8 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
     Returns:
         BookingResponse: Résultat de la tentative de réservation
     """
-    headless_default = _env_bool("BROWSERUSE_HEADLESS", True)
+    # Par défaut, afficher le navigateur (comme dans booker.py)
+    headless_default = _env_bool("BROWSERUSE_HEADLESS", False)
     headless = headless_default if req.headless is None else bool(req.headless)
     
     # Construire le dictionnaire d'informations utilisateur
@@ -368,8 +369,29 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
         # Charger un proxy aléatoire
         proxy_config = _load_random_proxy()
         
-        # Créer le navigateur avec le proxy
-        browser = _create_browser(headless=headless, proxy=proxy_config)
+        # Créer le navigateur avec les mêmes paramètres que booker.py
+        chrome_path = _resolve_chrome_path()
+        browser = Browser(
+            executable_path=chrome_path,
+            headless=headless,
+            devtools=True,  # Toujours activer devtools pour voir le navigateur
+            enable_default_extensions=False,
+            proxy=proxy_config,
+            args=[
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-background-networking",
+                "--disable-sync",
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--disable-gpu",
+                "--disable-web-security",
+                "--disable-features=VizDisplayCompositor",
+                "--window-size=960,1080",
+            ],
+            wait_for_network_idle_page_load_time=3,
+            minimum_wait_page_load_time=1,
+        )
         _wait_for_browseruse_ready()
         
         # Créer le prompt de réservation

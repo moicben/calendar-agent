@@ -15,7 +15,8 @@ BOOK_ENDPOINT = f"{BASE_URL}/book-calendar"
 booking_data = {
     "calendar_url": "https://calendly.com/example/30min",  # Remplacez par une vraie URL
     # Tous les autres champs sont optionnels et utiliseront les valeurs par défaut
-    "headless": False,  # Mettre True pour mode headless
+    # Par défaut, le navigateur est visible (headless=False)
+    # Pour activer le mode headless, ajoutez: "headless": True
 }
 
 # Exemple avec des données personnalisées (décommentez pour utiliser)

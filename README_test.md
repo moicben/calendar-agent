@@ -123,7 +123,7 @@ print(response.json())
 - `preference_creneau` (optionnel) : Préférence de créneau (par défaut: "Premier créneau disponible dès demain dans les 7 prochains jours")
 - `type_rdv` (optionnel) : Type de rendez-vous (par défaut: "Visio-conférence Google Meet")
 - `message` (optionnel) : Message personnalisé (par défaut: message standard)
-- `headless` (optionnel) : Mode headless (par défaut: True)
+- `headless` (optionnel) : Mode headless (par défaut: False - navigateur visible)
 - `max_steps` (optionnel) : Nombre maximum d'étapes (par défaut: 20)
 
 ## Utilisation en ligne de commande
