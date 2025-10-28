@@ -8,12 +8,17 @@
 
 import os
 import random
+import sys
 from typing import List, Optional
 from browser_use import Agent, ChatOpenAI, Browser
 from browser_use.browser import ProxySettings
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from enum import Enum
+
+# Ajouter le répertoire parent au path pour importer config
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import config
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -168,17 +173,8 @@ def main(num_calendars: int = 1) -> None:
     new_calendars_file = "calendars/proceed.txt"
     booked_calendars_file = "calendars/booked"
     
-    # Informations de réservation (à personnaliser selon vos besoins)
-    user_info = {
-        "nom": "Cyril Moriou",
-        "email": "lexpertisedunotaire@gmail.com", 
-        "telephone": "+33774334897",
-        "site_web": "etude-lyon-bugeaud.notaires.fr",
-        "societe": "Étude Lyon Bugeaud",
-        "preference_creneau": "Premier créneau disponible dès demain dans les 7 prochains jours",
-        "type_rdv": "Visio-conférence Google Meet",
-        "message": "Dans le cadre du (re)lancement de notre stratégie de comm, et l'update de nos réseaux (TikTok / Instagram). Votre profil nous semble correspondre à nos besoins, pour nous accompagner sur la mise en forme de tout cela. \n Au plaisir d'en discuter.\nMerci,"
-    }
+    # Informations de réservation chargées depuis la configuration centralisée
+    user_info = config.get_booking_defaults()
 
     # Charger les URLs disponibles
     available_urls = load_calendar_urls(new_calendars_file)
