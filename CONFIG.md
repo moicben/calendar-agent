@@ -2,37 +2,24 @@
 
 ## 📝 Fichier de configuration centralisé
 
-Les informations de réservation sont maintenant centralisées dans **`config.py`**.
+Les informations de réservation sont centralisées dans **`config.py`**.
 
 ## 🎯 Modification des valeurs par défaut
 
-### Option 1 : Modifier directement `config.py`
-
-Ouvrez `config.py` et modifiez les valeurs par défaut :
+Ouvrez `config.py` et modifiez directement les valeurs :
 
 ```python
 def get_booking_defaults():
     return {
         "nom": "Votre Nom",
         "email": "votre@email.com",
-        # ... etc
+        "telephone": "+33612345678",
+        "site_web": "votre-site.com",
+        "societe": "Votre Société",
+        "preference_creneau": "Premier créneau disponible dès demain dans les 7 prochains jours",
+        "type_rdv": "Visio-conférence Google Meet",
+        "message": "Votre message personnalisé...",
     }
-```
-
-### Option 2 : Utiliser des variables d'environnement (recommandé)
-
-Créez un fichier `.env` à la racine du projet :
-
-```bash
-# Configuration de réservation
-BOOKING_NOM=Votre Nom
-BOOKING_EMAIL=votre@email.com
-BOOKING_TELEPHONE=+33612345678
-BOOKING_SITE_WEB=votre-site.com
-BOOKING_SOCIETE=Votre Société
-BOOKING_PREFERENCE_CRENEAU=Premier créneau disponible dès demain dans les 7 prochains jours
-BOOKING_TYPE_RDV=Visio-conférence Google Meet
-BOOKING_MESSAGE=Votre message personnalisé...
 ```
 
 ## 🔄 Utilisation
@@ -73,7 +60,7 @@ curl -X POST "http://localhost:8080/book-calendar" \
 ## ✨ Avantages
 
 ✅ **Centralisation** : Une seule source de vérité  
-✅ **Flexibilité** : Variables d'environnement ou fichier Python  
+✅ **Simplicité** : Modification directe dans un seul fichier  
 ✅ **Compatibilité** : Fonctionne avec `booker.py` et l'API  
-✅ **Facilité** : Modification simple et rapide
+✅ **Facilité** : Pas besoin de configuration complexe
 
