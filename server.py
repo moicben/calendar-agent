@@ -1,15 +1,18 @@
 import os
 import sys
 import time
+import random
 from typing import Optional, Any
 
 from fastapi import FastAPI
 from fastapi import HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from enum import Enum
 
 # Runtime deps from browser-use
 from browser_use import Agent, ChatOpenAI, Browser
+from browser_use.browser import ProxySettings
 from uuid import uuid4
 from threading import Thread, Lock
 from typing import Dict
@@ -62,10 +65,28 @@ def _resolve_chrome_path() -> str:
     return env_path or mac_path
 
 
-def _create_browser(headless: bool) -> Browser:
+def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Browser:
     chrome_path = _resolve_chrome_path()
     # user_data_dir = os.environ.get("BROWSERUSE_USER_DATA_DIR", "./browseruse-profile")
     devtools_enabled = _env_bool("BROWSERUSE_DEVTOOLS", not headless)
+
+    browser_args = [
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-sync",
+    ]
+    
+    # Ajouter des arguments supplémentaires pour les VM si proxy est utilisé
+    if proxy:
+        browser_args.extend([
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--disable-gpu",
+            "--disable-web-security",
+            "--disable-features=VizDisplayCompositor",
+            "--window-size=960,1080",
+        ])
 
     return Browser(
         executable_path=chrome_path,
@@ -73,14 +94,10 @@ def _create_browser(headless: bool) -> Browser:
         devtools=devtools_enabled,
         #user_data_dir=user_data_dir,
         enable_default_extensions=False,
-        args=[
-            "--no-first-run",
-            "--no-default-browser-check",
-            "--disable-background-networking",
-            "--disable-sync",
-        ],
-        wait_for_network_idle_page_load_time=0.5,
-        minimum_wait_page_load_time=0.25,
+        proxy=proxy,
+        args=browser_args,
+        wait_for_network_idle_page_load_time=3 if proxy else 0.5,
+        minimum_wait_page_load_time=1 if proxy else 0.25,
     )
 
 
@@ -89,6 +106,87 @@ def _wait_for_browseruse_ready() -> None:
     delay_s = _env_float("BROWSERUSE_STARTUP_DELAY_S", 1.5)
     if delay_s > 0:
         time.sleep(delay_s)
+
+
+def _load_random_proxy(proxies_file: str = "proxies") -> Optional[ProxySettings]:
+    """Charge un proxy aléatoire depuis le fichier proxies."""
+    try:
+        with open(proxies_file, 'r', encoding='utf-8') as f:
+            proxy_lines = [line.strip() for line in f.readlines() if line.strip()]
+        
+        if not proxy_lines:
+            return None
+        
+        # Sélectionner un proxy aléatoire
+        random_proxy_line = random.choice(proxy_lines)
+        
+        # Parser le format: host:port:username:password
+        parts = random_proxy_line.split(':')
+        if len(parts) != 4:
+            return None
+        
+        host, port, username, password = parts
+        
+        proxy_config = ProxySettings(
+            server=f'https://{host}:{port}',
+            username=username,
+            password=password,
+            bypass='localhost,127.0.0.1'
+        )
+        
+        return proxy_config
+        
+    except FileNotFoundError:
+        return None
+    except Exception:
+        return None
+
+
+def _create_booking_prompt(url: str, user_info: dict) -> str:
+    """Crée un prompt concis pour la réservation."""
+    return f"""
+Mission: Réserver un créneau sur {url}.
+
+Données:
+- Nom: {user_info.get('nom')}
+- Email: {user_info.get('email')}
+- Téléphone: {user_info.get('telephone')}
+- Site web: {user_info.get('site_web')}
+- Société: {user_info.get('societe')}
+- Préférence: {user_info.get('preference_creneau')}
+- Type de RDV: {user_info.get('type_rdv')}
+- Message: {user_info.get('message')}
+
+Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
+- SUCCESS_RESERVATION
+- AUCUN_CRENEAU_DISPONIBLE
+- ERREUR_RESERVATION
+
+Étapes:
+1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt, puis va sur {url}. Si page introuvable/404 ou si le widget calendrier (Calendly, cal.com, Google Calendar etc.) ne charge pas → ERREUR_RESERVATION.
+2) Cherche des créneaux sur les 5 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE.
+3) Sélectionne le premier jour disponible dans le calendrier conforme aux préférences (généralement couleur plus visible ou contraste plus élevé).
+4) Sélectionner le premier créneau horaire disponible dans le jour sélectionné.
+4) Remplis le formulaire:
+   - Nom complet: {user_info.get('nom')}
+   - Email: {user_info.get('email')}
+   - Téléphone: {user_info.get('telephone')} (adapter le format si requis)
+   - Site/Société: {user_info.get('site_web')} / {user_info.get('societe')}
+   - Message/Notes: {user_info.get('message')}
+   - Listes déroulantes obligatoires: première option raisonnable.
+   - Cases à cocher obligatoires: cocher.
+   - Type de RDV: {user_info.get('type_rdv')}
+5) En cas d'erreur de validation, corrige puis réessaie jusqu'à 3 fois.
+6) Soumets. Si confirmation visible → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION.
+
+Contraintes:
+- Agis de façon autonome; n'attends aucune confirmation manuelle.
+- Ne change pas le fuseau horaire; conversion mentale seulement si nécessaire.
+- N'essaie pas de forcer une disponibilité via refresh/navigation annexe.
+- Privilégier toujours la visioconférence à l'appel par téléphone, dans le lieu du RDV ou option de réservation. (Google Meet de préférence).
+- Dans le message/Notes du RDV utiliser des retours en appui de "Entrer" pour chaque ligne de texte.
+- Si champ avec demande d'informations complèmentaires ou autres champs similaires, se servir de {user_info.get('message')}
+"""
 
 
 class RunGoalRequest(BaseModel):
@@ -121,6 +219,39 @@ class GetRunResponse(BaseModel):
     run_id: str
     status: str
     result: Optional[Any] = None
+    error: Optional[str] = None
+
+
+# -------------------
+# Booking models
+# -------------------
+class BookingStatus(str, Enum):
+    SUCCESS_RESERVATION = "SUCCESS_RESERVATION"
+    AUCUN_CRENEAU_DISPONIBLE = "AUCUN_CRENEAU_DISPONIBLE"
+    ERREUR_RESERVATION = "ERREUR_RESERVATION"
+
+
+class BookingOutput(BaseModel):
+    status: BookingStatus
+
+
+class BookingRequest(BaseModel):
+    calendar_url: str
+    nom: Optional[str] = "Cyril Moriou"
+    email: Optional[str] = "lexpertisedunotaire@gmail.com"
+    telephone: Optional[str] = "+33774334897"
+    site_web: Optional[str] = "etude-lyon-bugeaud.notaires.fr"
+    societe: Optional[str] = "Étude Lyon Bugeaud"
+    preference_creneau: Optional[str] = "Premier créneau disponible dès demain dans les 7 prochains jours"
+    type_rdv: Optional[str] = "Visio-conférence Google Meet"
+    message: Optional[str] = "Dans le cadre du (re)lancement de notre stratégie de comm, et l'update de nos réseaux (TikTok / Instagram). Votre profil nous semble correspondre à nos besoins, pour nous accompagner sur la mise en forme de tout cela. \n Au plaisir d'en discuter.\nMerci,"
+    headless: Optional[bool] = None
+    max_steps: Optional[int] = 20
+
+
+class BookingResponse(BaseModel):
+    ok: bool
+    status: Optional[str] = None
     error: Optional[str] = None
 
 
@@ -205,6 +336,81 @@ def get_run(run_id: str) -> GetRunResponse:
             result=run.get("result"),
             error=run.get("error"),
         )
+
+
+@app.post("/book-calendar", response_model=BookingResponse)
+def book_calendar(req: BookingRequest) -> BookingResponse:
+    """
+    Endpoint pour réserver un créneau sur un calendrier donné.
+    
+    Args:
+        req: Requête contenant l'URL du calendrier et les informations utilisateur
+        
+    Returns:
+        BookingResponse: Résultat de la tentative de réservation
+    """
+    headless_default = _env_bool("BROWSERUSE_HEADLESS", True)
+    headless = headless_default if req.headless is None else bool(req.headless)
+    
+    # Construire le dictionnaire d'informations utilisateur
+    user_info = {
+        "nom": req.nom,
+        "email": req.email,
+        "telephone": req.telephone,
+        "site_web": req.site_web or "",
+        "societe": req.societe or "",
+        "preference_creneau": req.preference_creneau,
+        "type_rdv": req.type_rdv,
+        "message": req.message or "",
+    }
+    
+    try:
+        # Charger un proxy aléatoire
+        proxy_config = _load_random_proxy()
+        
+        # Créer le navigateur avec le proxy
+        browser = _create_browser(headless=headless, proxy=proxy_config)
+        _wait_for_browseruse_ready()
+        
+        # Créer le prompt de réservation
+        booking_task = _create_booking_prompt(req.calendar_url, user_info)
+        
+        # Créer l'agent avec le modèle de sortie
+        agent = Agent(
+            task=booking_task,
+            llm=ChatOpenAI(model="gpt-4o-mini"),
+            browser=browser,
+            output_model_schema=BookingOutput,
+        )
+        
+        # Exécuter la réservation
+        result = agent.run_sync(max_steps=req.max_steps or 20)
+        
+        # Extraire le statut du résultat
+        status = "ERREUR_RESERVATION"  # Valeur par défaut
+        
+        if hasattr(result, 'status'):
+            status = result.status.value
+        elif result:
+            # Essayer d'extraire depuis le dernier élément de l'historique
+            last_step = result[-1] if isinstance(result, list) else result
+            if hasattr(last_step, 'status'):
+                status = last_step.status.value
+            elif hasattr(last_step, 'data') and isinstance(last_step.data, dict):
+                status = last_step.data.get('status', 'ERREUR_RESERVATION')
+            elif hasattr(last_step, 'result') and isinstance(last_step.result, dict):
+                status = last_step.result.get('status', 'ERREUR_RESERVATION')
+        
+        # Nettoyer le navigateur
+        try:
+            browser.close()
+        except:
+            pass
+        
+        return BookingResponse(ok=True, status=status)
+        
+    except Exception as e:
+        return BookingResponse(ok=False, error=str(e))
 
 
 def main() -> None:
