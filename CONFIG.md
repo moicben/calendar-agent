@@ -1,49 +1,39 @@
 # Configuration des informations de réservation
 
-## 📝 Fichier de configuration centralisé
+## 📝 Configuration
 
-Les informations de réservation sont centralisées dans **`config.py`**.
+Les informations de réservation peuvent être configurées de deux façons :
 
-## 🎯 Modification des valeurs par défaut
+### 1. Dans l'API (`server.py`)
 
-Ouvrez `config.py` et modifiez directement les valeurs :
-
-```python
-def get_booking_defaults():
-    return {
-        "nom": "Votre Nom",
-        "email": "votre@email.com",
-        "telephone": "+33612345678",
-        "site_web": "votre-site.com",
-        "societe": "Votre Société",
-        "preference_creneau": "Premier créneau disponible dès demain dans les 7 prochains jours",
-        "type_rdv": "Visio-conférence Google Meet",
-        "message": "Votre message personnalisé...",
-    }
-```
-
-## 🔄 Utilisation
-
-### Dans le script `booker.py`
-
-Les valeurs sont automatiquement chargées depuis `config.py` :
-
-```bash
-python agents/booker.py 1
-```
-
-### Dans l'API (`server.py`)
-
-Les valeurs par défaut sont utilisées automatiquement. Vous pouvez les surcharger dans votre requête :
+Les valeurs par défaut sont définies dans `BookingRequest` et peuvent être surchargées dans l'appel API :
 
 ```bash
 curl -X POST "http://localhost:8080/book-calendar" \
   -H "Content-Type: application/json" \
   -d '{
     "calendar_url": "https://calendly.com/example/30min",
-    "nom": "Nom Personnalisé",  # Optionnel : surcharge la valeur par défaut
-    "email": "email@perso.com"  # Optionnel : surcharge la valeur par défaut
+    "nom": "Votre Nom",  # Optionnel : surcharge la valeur par défaut
+    "email": "votre@email.com"  # Optionnel : surcharge la valeur par défaut
   }'
+```
+
+### 2. Dans le script `booker.py`
+
+Les valeurs sont définies directement dans le code. Modifiez `agents/booker.py` :
+
+```python
+user_info = {
+    "nom": "Votre Nom",
+    "email": "votre@email.com",
+    "telephone": "+33612345678",
+    # ... etc
+}
+```
+
+Puis exécutez :
+```bash
+python agents/booker.py 1
 ```
 
 ## 📋 Champs configurables
@@ -57,10 +47,9 @@ curl -X POST "http://localhost:8080/book-calendar" \
 - `type_rdv` : Type de rendez-vous
 - `message` : Message personnalisé
 
-## ✨ Avantages
+## ✨ Notes
 
-✅ **Centralisation** : Une seule source de vérité  
-✅ **Simplicité** : Modification directe dans un seul fichier  
-✅ **Compatibilité** : Fonctionne avec `booker.py` et l'API  
-✅ **Facilité** : Pas besoin de configuration complexe
+- Les valeurs par défaut sont définies dans `server.py` pour l'API
+- Pour `booker.py`, modifiez directement les valeurs dans le code
+- Dans l'API, tous les champs sauf `calendar_url` sont optionnels et ont des valeurs par défaut
 

@@ -17,9 +17,6 @@ from uuid import uuid4
 from threading import Thread, Lock
 from typing import Dict
 
-# Import de la configuration centralisée
-import config
-
 
 load_dotenv()
 
@@ -240,14 +237,14 @@ class BookingOutput(BaseModel):
 
 class BookingRequest(BaseModel):
     calendar_url: str
-    nom: Optional[str] = None
-    email: Optional[str] = None
-    telephone: Optional[str] = None
-    site_web: Optional[str] = None
-    societe: Optional[str] = None
-    preference_creneau: Optional[str] = None
-    type_rdv: Optional[str] = None
-    message: Optional[str] = None
+    nom: Optional[str] = "Cyril Moriou"
+    email: Optional[str] = "lexpertisedunotaire@gmail.com"
+    telephone: Optional[str] = "+33774334897"
+    site_web: Optional[str] = "etude-lyon-bugeaud.notaires.fr"
+    societe: Optional[str] = "Étude Lyon Bugeaud"
+    preference_creneau: Optional[str] = "Premier créneau disponible dès demain dans les 7 prochains jours"
+    type_rdv: Optional[str] = "Visio-conférence Google Meet"
+    message: Optional[str] = "Dans le cadre du (re)lancement de notre stratégie de comm, et l'update de nos réseaux (TikTok / Instagram). Votre profil nous semble correspondre à nos besoins, pour nous accompagner sur la mise en forme de tout cela. \n Au plaisir d'en discuter.\nMerci,"
     headless: Optional[bool] = None
     max_steps: Optional[int] = 20
 
@@ -356,20 +353,16 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
     headless_default = _env_bool("BROWSERUSE_HEADLESS", False)
     headless = headless_default if req.headless is None else bool(req.headless)
     
-    # Charger les valeurs par défaut depuis la configuration
-    defaults = config.get_booking_defaults()
-    
-    # Construire le dictionnaire d'informations utilisateur
-    # Utiliser les valeurs de la requête si fournies, sinon les valeurs par défaut
+    # Construire le dictionnaire d'informations utilisateur depuis la requête
     user_info = {
-        "nom": req.nom or defaults["nom"],
-        "email": req.email or defaults["email"],
-        "telephone": req.telephone or defaults["telephone"],
-        "site_web": req.site_web or defaults["site_web"],
-        "societe": req.societe or defaults["societe"],
-        "preference_creneau": req.preference_creneau or defaults["preference_creneau"],
-        "type_rdv": req.type_rdv or defaults["type_rdv"],
-        "message": req.message or defaults["message"],
+        "nom": req.nom,
+        "email": req.email,
+        "telephone": req.telephone,
+        "site_web": req.site_web or "",
+        "societe": req.societe or "",
+        "preference_creneau": req.preference_creneau,
+        "type_rdv": req.type_rdv,
+        "message": req.message or "",
     }
     
     try:
