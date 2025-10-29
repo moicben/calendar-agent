@@ -2,23 +2,29 @@
 
 ## 📝 Configuration
 
-Les informations de réservation peuvent être configurées de deux façons :
+Les informations de réservation doivent être fournies dans l'appel API :
 
-### 1. Dans l'API (`server.py`)
+### Dans l'API (`server.py`)
 
-Les valeurs par défaut sont définies dans `BookingRequest` et peuvent être surchargées dans l'appel API :
+Tous les champs sont requis dans le body de la requête :
 
 ```bash
 curl -X POST "http://localhost:8080/book-calendar" \
   -H "Content-Type: application/json" \
   -d '{
     "calendar_url": "https://calendly.com/example/30min",
-    "nom": "Votre Nom",  # Optionnel : surcharge la valeur par défaut
-    "email": "votre@email.com"  # Optionnel : surcharge la valeur par défaut
+    "nom": "Votre Nom",
+    "email": "votre@email.com",
+    "telephone": "+33612345678",
+    "site_web": "votre-site.com",
+    "societe": "Votre Société",
+    "preference_creneau": "Premier créneau disponible dès demain dans les 7 prochains jours",
+    "type_rdv": "Visio-conférence Google Meet",
+    "message": "Votre message personnalisé..."
   }'
 ```
 
-### 2. Dans le script `booker.py`
+### Dans le script `booker.py`
 
 Les valeurs sont définies directement dans le code. Modifiez `agents/booker.py` :
 
@@ -49,7 +55,7 @@ python agents/booker.py 1
 
 ## ✨ Notes
 
-- Les valeurs par défaut sont définies dans `server.py` pour l'API
-- Pour `booker.py`, modifiez directement les valeurs dans le code
-- Dans l'API, tous les champs sauf `calendar_url` sont optionnels et ont des valeurs par défaut
+- Dans l'API, tous les champs sont requis dans le body de la requête
+- Pour `booker.py`, modifiez directement les valeurs dans le code ligne 172-181
+- Les champs `headless` et `max_steps` restent optionnels dans l'API
 

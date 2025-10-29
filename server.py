@@ -237,14 +237,14 @@ class BookingOutput(BaseModel):
 
 class BookingRequest(BaseModel):
     calendar_url: str
-    nom: Optional[str] = "Cyril Moriou"
-    email: Optional[str] = "lexpertisedunotaire@gmail.com"
-    telephone: Optional[str] = "+33774334897"
-    site_web: Optional[str] = "etude-lyon-bugeaud.notaires.fr"
-    societe: Optional[str] = "Étude Lyon Bugeaud"
-    preference_creneau: Optional[str] = "Premier créneau disponible dès demain dans les 7 prochains jours"
-    type_rdv: Optional[str] = "Visio-conférence Google Meet"
-    message: Optional[str] = "Dans le cadre du (re)lancement de notre stratégie de comm, et l'update de nos réseaux (TikTok / Instagram). Votre profil nous semble correspondre à nos besoins, pour nous accompagner sur la mise en forme de tout cela. \n Au plaisir d'en discuter.\nMerci,"
+    nom: str
+    email: str
+    telephone: str
+    site_web: str
+    societe: str
+    preference_creneau: str
+    type_rdv: str
+    message: str
     headless: Optional[bool] = None
     max_steps: Optional[int] = 20
 
@@ -358,11 +358,11 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
         "nom": req.nom,
         "email": req.email,
         "telephone": req.telephone,
-        "site_web": req.site_web or "",
-        "societe": req.societe or "",
+        "site_web": req.site_web,
+        "societe": req.societe,
         "preference_creneau": req.preference_creneau,
         "type_rdv": req.type_rdv,
-        "message": req.message or "",
+        "message": req.message,
     }
     
     try:

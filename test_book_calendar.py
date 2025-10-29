@@ -11,28 +11,21 @@ import json
 BASE_URL = "http://localhost:8080"
 BOOK_ENDPOINT = f"{BASE_URL}/book-calendar"
 
-# Exemple de données de réservation minimales (tous les champs sauf calendar_url sont optionnels)
+# Données de réservation (tous les champs sont requis)
 booking_data = {
     "calendar_url": "https://calendly.com/example/30min",  # Remplacez par une vraie URL
-    # Tous les autres champs sont optionnels et utiliseront les valeurs par défaut
-    # Par défaut, le navigateur est visible (headless=False)
-    # Pour activer le mode headless, ajoutez: "headless": True
+    "nom": "Cyril Moriou",
+    "email": "lexpertisedunotaire@gmail.com",
+    "telephone": "+33774334897",
+    "site_web": "etude-lyon-bugeaud.notaires.fr",
+    "societe": "Étude Lyon Bugeaud",
+    "preference_creneau": "Premier créneau disponible dès demain dans les 7 prochains jours",
+    "type_rdv": "Visio-conférence Google Meet",
+    "message": "Dans le cadre du (re)lancement de notre stratégie de comm, et l'update de nos réseaux (TikTok / Instagram). Votre profil nous semble correspondre à nos besoins, pour nous accompagner sur la mise en forme de tout cela. \n Au plaisir d'en discuter.\nMerci,",
+    # Champs optionnels :
+    # "headless": False,  # Par défaut False (navigateur visible)
+    # "max_steps": 20  # Par défaut 20
 }
-
-# Exemple avec des données personnalisées (décommentez pour utiliser)
-# booking_data = {
-#     "calendar_url": "https://calendly.com/example/30min",
-#     "nom": "Cyril Moriou",
-#     "email": "lexpertisedunotaire@gmail.com",
-#     "telephone": "+33774334897",
-#     "site_web": "etude-lyon-bugeaud.notaires.fr",
-#     "societe": "Étude Lyon Bugeaud",
-#     "preference_creneau": "Premier créneau disponible dès demain dans les 7 prochains jours",
-#     "type_rdv": "Visio-conférence Google Meet",
-#     "message": "Dans le cadre du (re)lancement de notre stratégie de comm...",
-#     "headless": False,
-#     "max_steps": 20
-# }
 
 
 def test_book_calendar():

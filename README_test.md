@@ -28,17 +28,7 @@ Le serveur démarre sur `http://0.0.0.0:8080` par défaut.
 
 Réserve automatiquement un créneau sur un calendrier donné.
 
-**Exemple de requête minimale (cURL) :**
-
-```bash
-curl -X POST "http://localhost:8080/book-calendar" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "calendar_url": "https://calendly.com/example/30min"
-  }'
-```
-
-**Exemple de requête complète (cURL) :**
+**Exemple de requête (cURL) :**
 
 ```bash
 curl -X POST "http://localhost:8080/book-calendar" \
@@ -52,28 +42,11 @@ curl -X POST "http://localhost:8080/book-calendar" \
     "societe": "Étude Lyon Bugeaud",
     "preference_creneau": "Premier créneau disponible dès demain dans les 7 prochains jours",
     "type_rdv": "Visio-conférence Google Meet",
-    "message": "Dans le cadre du (re)lancement de notre stratégie de comm...",
-    "headless": false,
-    "max_steps": 20
+    "message": "Dans le cadre du (re)lancement de notre stratégie de comm..."
   }'
 ```
 
-**Exemple de requête minimale (Python) :**
-
-```python
-import requests
-
-response = requests.post(
-    "http://localhost:8080/book-calendar",
-    json={
-        "calendar_url": "https://calendly.com/example/30min"
-    }
-)
-
-print(response.json())
-```
-
-**Exemple de requête complète (Python) :**
+**Exemple de requête (Python) :**
 
 ```python
 import requests
@@ -89,9 +62,7 @@ response = requests.post(
         "societe": "Étude Lyon Bugeaud",
         "preference_creneau": "Premier créneau disponible dès demain dans les 7 prochains jours",
         "type_rdv": "Visio-conférence Google Meet",
-        "message": "Dans le cadre du (re)lancement de notre stratégie de comm...",
-        "headless": False,
-        "max_steps": 20
+        "message": "Dans le cadre du (re)lancement de notre stratégie de comm..."
     }
 )
 
@@ -115,14 +86,14 @@ print(response.json())
 
 **Paramètres :**
 - `calendar_url` (requis) : URL du calendrier à utiliser
-- `nom` (optionnel) : Nom complet (par défaut: "Cyril Moriou")
-- `email` (optionnel) : Adresse email (par défaut: "lexpertisedunotaire@gmail.com")
-- `telephone` (optionnel) : Numéro de téléphone (par défaut: "+33774334897")
-- `site_web` (optionnel) : Site web (par défaut: "etude-lyon-bugeaud.notaires.fr")
-- `societe` (optionnel) : Nom de la société (par défaut: "Étude Lyon Bugeaud")
-- `preference_creneau` (optionnel) : Préférence de créneau (par défaut: "Premier créneau disponible dès demain dans les 7 prochains jours")
-- `type_rdv` (optionnel) : Type de rendez-vous (par défaut: "Visio-conférence Google Meet")
-- `message` (optionnel) : Message personnalisé (par défaut: message standard)
+- `nom` (requis) : Nom complet
+- `email` (requis) : Adresse email
+- `telephone` (requis) : Numéro de téléphone
+- `site_web` (requis) : Site web
+- `societe` (requis) : Nom de la société
+- `preference_creneau` (requis) : Préférence de créneau
+- `type_rdv` (requis) : Type de rendez-vous
+- `message` (requis) : Message personnalisé
 - `headless` (optionnel) : Mode headless (par défaut: False - navigateur visible)
 - `max_steps` (optionnel) : Nombre maximum d'étapes (par défaut: 20)
 
