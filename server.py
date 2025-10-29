@@ -3,6 +3,7 @@ import sys
 import time
 import random
 from typing import Optional, Any
+import json
 
 from fastapi import FastAPI
 from fastapi import HTTPException
@@ -255,6 +256,70 @@ class BookingResponse(BaseModel):
     error: Optional[str] = None
 
 
+_VALID_STATUSES = {"SUCCESS_RESERVATION", "AUCUN_CRENEAU_DISPONIBLE", "ERREUR_RESERVATION"}
+
+
+def _coerce_status(value):
+    """Essaie d'extraire un statut valide à partir d'une valeur hétérogène.
+
+    Gère: Enum BookingStatus, dict {status}, chaîne brute, chaîne JSON,
+    et chaîne contenant le token du statut.
+    """
+    if value is None:
+        return None
+
+    # Enum → string
+    try:
+        from enum import Enum
+        if isinstance(value, Enum):
+            value = value.value
+    except Exception:
+        pass
+
+    # dict avec clé status
+    if isinstance(value, dict):
+        s = value.get("status")
+        return s if isinstance(s, str) and s in _VALID_STATUSES else None
+
+    # chaîne brute ou JSON
+    if isinstance(value, str):
+        if value in _VALID_STATUSES:
+            return value
+        try:
+            obj = json.loads(value)
+            if isinstance(obj, dict):
+                s = obj.get("status")
+                if isinstance(s, str) and s in _VALID_STATUSES:
+                    return s
+        except Exception:
+            pass
+        for s in _VALID_STATUSES:
+            if s in value:
+                return s
+
+    return None
+
+
+def _extract_booking_status(result) -> str:
+    """Extrait un statut robuste depuis le résultat de l'agent."""
+    s = _coerce_status(getattr(result, "status", None))
+    if s:
+        return s
+
+    if isinstance(result, list) and result:
+        last = result[-1]
+        s = (
+            _coerce_status(getattr(last, "status", None))
+            or _coerce_status(getattr(last, "data", None))
+            or _coerce_status(getattr(last, "result", None))
+        )
+        if s:
+            return s
+
+    s = _coerce_status(result)
+    return s or "ERREUR_RESERVATION"
+
+
 def _run_job(run_id: str, req: RunGoalRequest) -> None:
     # Mark running
     with _RUNS_LOCK:
@@ -407,21 +472,9 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
         
         # Exécuter la réservation
         result = agent.run_sync(max_steps=req.max_steps or 20)
-        
-        # Extraire le statut du résultat
-        status = "ERREUR_RESERVATION"  # Valeur par défaut
-        
-        if hasattr(result, 'status'):
-            status = result.status.value
-        elif result:
-            # Essayer d'extraire depuis le dernier élément de l'historique
-            last_step = result[-1] if isinstance(result, list) else result
-            if hasattr(last_step, 'status'):
-                status = last_step.status.value
-            elif hasattr(last_step, 'data') and isinstance(last_step.data, dict):
-                status = last_step.data.get('status', 'ERREUR_RESERVATION')
-            elif hasattr(last_step, 'result') and isinstance(last_step.result, dict):
-                status = last_step.result.get('status', 'ERREUR_RESERVATION')
+
+        # Extraire le statut de manière robuste
+        status = _extract_booking_status(result)
         
         # Nettoyer le navigateur
         try:
