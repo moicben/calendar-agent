@@ -181,7 +181,7 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
    - Type de RDV: {user_info.get('type_rdv')}
 9) En cas d'erreur de validation, corrige puis réessaie jusqu'à 5 fois.
 10) Clique sur "Confirmer l'événement", "Envoyer", "Soumettre" ou "Submit" pour soumettre le formulaire.
-11) Si confirmation visible "You are scheduled" ou "Réservation confirmée" → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION
+11) Si confirmation visible "You are scheduled" ou "Vous avez rendez-vous" ou "Réservation confirmée" → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION
 
 Contraintes:
 - Agis de façon autonome; n'attends aucune confirmation manuelle.
