@@ -73,6 +73,8 @@ def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Br
         "--no-default-browser-check",
         "--disable-background-networking",
         "--disable-sync",
+        "--new-window",
+        "--remote-debugging-address=127.0.0.1",
     ]
     
     # Ajouter des arguments supplémentaires pour les VM si proxy est utilisé
@@ -219,8 +221,8 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
         # Créer le navigateur en utilisant la fonction helper
         browser = _create_browser(headless=headless, proxy=proxy_config)
         
-        # Laisse 4 secondes au navigateur pour se charger
-        time.sleep(4)
+        # Laisse 2 secondes au navigateur pour se charger
+        time.sleep(2)
 
         
         # Créer le prompt de réservation
