@@ -110,12 +110,9 @@ def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Br
 # Attente simple et configurable pour laisser BrowserUse initialiser ses composants
 def _wait_for_browseruse_ready() -> None:
     # Attente simple et configurable pour laisser BrowserUse initialiser ses composants
-    # Délai par défaut augmenté à 20 secondes pour laisser le temps au navigateur de s'initialiser complètement
-    delay_s = _env_float("BROWSERUSE_STARTUP_DELAY_S", 20)
+    delay_s = _env_float("BROWSERUSE_STARTUP_DELAY_S", 10)
     if delay_s > 0:
-        logging.info(f"Attente de l'initialisation du navigateur ({delay_s}s)...")
         time.sleep(delay_s)
-        logging.info("Attente terminée, création de l'agent...")
 
 # Charge un proxy aléatoire depuis le fichier proxies
 def _load_random_proxy(proxies_file: str = "proxies") -> Optional[ProxySettings]:
@@ -234,11 +231,6 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
         
         # Créer le navigateur en utilisant la fonction helper
         browser = _create_browser(headless=headless, proxy=proxy_config)
-        
-        # Petite pause immédiate pour laisser le navigateur démarrer
-        time.sleep(2)
-        
-        # Attendre que browser-use soit prêt
         _wait_for_browseruse_ready()
         
         # Créer le prompt de réservation
