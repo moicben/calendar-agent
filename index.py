@@ -66,7 +66,7 @@ def _resolve_chrome_path() -> str:
 
 def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Browser:
     chrome_path = _resolve_chrome_path()
-    devtools_enabled = False
+    devtools_enabled = True
 
     browser_args = [
         "--no-first-run",
