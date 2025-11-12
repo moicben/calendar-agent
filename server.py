@@ -4,11 +4,10 @@ import os
 import sys
 import time
 import random
-from typing import Optional, Any
+from typing import Optional
 import json
 
 from fastapi import FastAPI
-from fastapi import HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from enum import Enum
@@ -16,14 +15,11 @@ from enum import Enum
 # Runtime deps from browser-use
 from browser_use import Agent, ChatOpenAI, Browser
 from browser_use.browser import ProxySettings
-from uuid import uuid4
-from threading import Thread, Lock
-from typing import Dict
 
 
 load_dotenv()
 
-app = FastAPI(title="BrowserUse API", version="0.1.0")
+app = FastAPI(title="Calendar Booking API", version="0.1.0")
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -70,7 +66,6 @@ def _resolve_chrome_path() -> str:
 
 def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Browser:
     chrome_path = _resolve_chrome_path()
-    # user_data_dir = os.environ.get("BROWSERUSE_USER_DATA_DIR", "./browseruse-profile")
     devtools_enabled = _env_bool("BROWSERUSE_DEVTOOLS", not headless)
 
     browser_args = [
@@ -95,12 +90,11 @@ def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Br
         executable_path=chrome_path,
         headless=headless,
         devtools=devtools_enabled,
-        #user_data_dir=user_data_dir,
         enable_default_extensions=False,
         proxy=proxy,
         args=browser_args,
-        wait_for_network_idle_page_load_time=3 if proxy else 3,
-        minimum_wait_page_load_time=5 if proxy else 5,
+        wait_for_network_idle_page_load_time=3,
+        minimum_wait_page_load_time=5 if proxy else 1,
     )
 
 
@@ -196,39 +190,6 @@ Contraintes:
 """
 
 
-class RunGoalRequest(BaseModel):
-    goal: str
-    start_url: Optional[str] = None
-    headless: Optional[bool] = None
-    max_steps: Optional[int] = None
-    model: Optional[str] = None
-
-
-class RunGoalResponse(BaseModel):
-    ok: bool
-    result: Optional[Any] = None
-    error: Optional[str] = None
-
-
-# -------------------
-# Job store in-memory
-# -------------------
-_RUNS_LOCK: Lock = Lock()
-_RUNS: Dict[str, dict] = {}
-
-
-class CreateRunResponse(BaseModel):
-    run_id: str
-    status: str
-
-
-class GetRunResponse(BaseModel):
-    run_id: str
-    status: str
-    result: Optional[Any] = None
-    error: Optional[str] = None
-
-
 # -------------------
 # Booking models
 # -------------------
@@ -275,12 +236,8 @@ def _coerce_status(value):
         return None
 
     # Enum → string
-    try:
-        from enum import Enum
-        if isinstance(value, Enum):
-            value = value.value
-    except Exception:
-        pass
+    if isinstance(value, Enum):
+        value = value.value
 
     # dict avec clé status
     if isinstance(value, dict):
@@ -326,87 +283,9 @@ def _extract_booking_status(result) -> str:
     return s or "ERREUR_RESERVATION"
 
 
-def _run_job(run_id: str, req: RunGoalRequest) -> None:
-    # Mark running
-    with _RUNS_LOCK:
-        _RUNS[run_id]["status"] = "running"
-        _RUNS[run_id]["error"] = None
-        _RUNS[run_id]["result"] = None
-
-    headless_default = _env_bool("BROWSERUSE_HEADLESS", True)
-    headless = headless_default if req.headless is None else bool(req.headless)
-    model = req.model or os.environ.get("BROWSERUSE_MODEL", "gpt-5-nano")
-
-    try:
-        browser = _create_browser(headless=headless)
-        _wait_for_browseruse_ready()
-        agent = Agent(
-            task=req.goal,
-            llm=ChatOpenAI(model=model),
-            browser=browser,
-        )
-        output = agent.run_sync()
-        with _RUNS_LOCK:
-            _RUNS[run_id]["status"] = "succeeded"
-            _RUNS[run_id]["result"] = str(output)
-    except Exception as e:  # noqa: BLE001
-        with _RUNS_LOCK:
-            _RUNS[run_id]["status"] = "failed"
-            _RUNS[run_id]["error"] = str(e)
-
-
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
-
-
-@app.post("/run-goal", response_model=RunGoalResponse)
-def run_goal(req: RunGoalRequest) -> RunGoalResponse:
-    headless_default = _env_bool("BROWSERUSE_HEADLESS", True)
-    headless = headless_default if req.headless is None else bool(req.headless)
-
-    model = req.model or os.environ.get("BROWSERUSE_MODEL", "gpt-5-nano")
-
-    try:
-        browser = _create_browser(headless=headless)
-        _wait_for_browseruse_ready()
-
-        agent = Agent(
-            task=req.goal,
-            llm=ChatOpenAI(model=model),
-            browser=browser,
-        )
-
-        output = agent.run_sync()
-        # Some versions return None; stringify to be safe
-        return RunGoalResponse(ok=True, result=str(output))
-    except Exception as e:  # noqa: BLE001 - surface error nicely over API
-        return RunGoalResponse(ok=False, error=str(e))
-
-
-@app.post("/runs", response_model=CreateRunResponse)
-def create_run(req: RunGoalRequest) -> CreateRunResponse:
-    run_id = str(uuid4())
-    with _RUNS_LOCK:
-        _RUNS[run_id] = {"status": "queued", "result": None, "error": None}
-
-    t = Thread(target=_run_job, args=(run_id, req), daemon=True)
-    t.start()
-    return CreateRunResponse(run_id=run_id, status="queued")
-
-
-@app.get("/runs/{run_id}", response_model=GetRunResponse)
-def get_run(run_id: str) -> GetRunResponse:
-    with _RUNS_LOCK:
-        run = _RUNS.get(run_id)
-        if run is None:
-            raise HTTPException(status_code=404, detail="run_not_found")
-        return GetRunResponse(
-            run_id=run_id,
-            status=run.get("status", "unknown"),
-            result=run.get("result"),
-            error=run.get("error"),
-        )
 
 
 @app.post("/book-calendar", response_model=BookingResponse)
@@ -420,7 +299,7 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
     Returns:
         BookingResponse: Résultat de la tentative de réservation
     """
-    # Par défaut, afficher le navigateur (comme dans booker.py)
+    # Par défaut, afficher le navigateur
     headless_default = _env_bool("BROWSERUSE_HEADLESS", False)
     headless = headless_default if req.headless is None else bool(req.headless)
     
@@ -440,29 +319,8 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
         # Charger un proxy aléatoire
         proxy_config = _load_random_proxy()
         
-        # Créer le navigateur avec les mêmes paramètres que booker.py
-        chrome_path = _resolve_chrome_path()
-        browser = Browser(
-            executable_path=chrome_path,
-            headless=headless,
-            devtools=True,  # Toujours activer devtools pour voir le navigateur
-            enable_default_extensions=False,
-            proxy=proxy_config,
-            args=[
-                "--no-first-run",
-                "--no-default-browser-check",
-                "--disable-background-networking",
-                "--disable-sync",
-                "--disable-dev-shm-usage",
-                "--no-sandbox",
-                "--disable-gpu",
-                "--disable-web-security",
-                "--disable-features=VizDisplayCompositor",
-                "--window-size=960,1080",
-            ],
-            wait_for_network_idle_page_load_time=3,
-            minimum_wait_page_load_time=1,
-        )
+        # Créer le navigateur en utilisant la fonction helper
+        browser = _create_browser(headless=headless, proxy=proxy_config)
         _wait_for_browseruse_ready()
         
         # Créer le prompt de réservation
@@ -485,7 +343,7 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
         # Nettoyer le navigateur
         try:
             browser.close()
-        except:
+        except Exception:
             pass
         
         return BookingResponse(ok=True, status=status)
@@ -508,5 +366,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
