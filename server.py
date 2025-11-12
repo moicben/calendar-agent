@@ -165,13 +165,15 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
 - AUCUN_CRENEAU_DISPONIBLE
 - ERREUR_RESERVATION
 
-Étapes:
-1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt, puis va sur {url}. Si page introuvable/404 ou si le widget Calendly ne charge pas → ERREUR_RESERVATION.
-2) Cherche des jours disponibles sur les 7 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE.
-3) Clique sur le premier jour disponible dans le calendrier que tu as trouvé.
-4) Clique sur le premier créneau horaire disponible dans le jour que tu as sélectionné.
-5) Clique sur "Continuer"ou "Continue" pour accéder au formulaire de réservation.
-6) Une fois le formulaire affiché, complète-le avec les informations suivantes:
+Étapes explicites à suivre (sans rien modifier):
+1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt
+2) Rends-toi sur l'URL du calendrier : "{url}". Si page introuvable/404 ou si le widget Calendly ne charge pas, retourne ERREUR_RESERVATION.
+3) Cherche des jours disponibles sur les 7 prochains jours. Si aucun, retourne AUCUN_CRENEAU_DISPONIBLE.
+4) Clique sur le premier jour disponible dans le calendrier que tu as trouvé.
+5) Clique sur le premier créneau horaire disponible dans le jour que tu as sélectionné.
+6) Clique sur "Suivant"ou "Next" pour accéder au formulaire de réservation.
+7) Une fois le formulaire affiché, analyse-le pour identifier les champs obligatoires
+8) Remplis les champs obligatoires identifiés avec parcimonie les informations suivantes:
    - Nom complet: {user_info.get('nom')}
    - Email: {user_info.get('email')}
    - Téléphone: {user_info.get('telephone')} (adapter le format si requis)
@@ -180,8 +182,9 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
    - Listes déroulantes obligatoires: première option raisonnable.
    - Cases à cocher obligatoires: cocher.
    - Type de RDV: {user_info.get('type_rdv')}
-7) En cas d'erreur de validation, corrige puis réessaie jusqu'à 5 fois.
-8) Clique sur "Réserver ", "Envoyer", "Soumettre" ou "Submit" pour soumettre le formulaire. Si confirmation visible → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION.
+9) En cas d'erreur de validation, corrige puis réessaie jusqu'à 5 fois.
+10) Clique sur "Confirmer l'événement", "Envoyer", "Soumettre" ou "Submit" pour soumettre le formulaire.
+11) Si confirmation visible "You are scheduled" ou "Réservation confirmée" → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION
 
 Contraintes:
 - Agis de façon autonome; n'attends aucune confirmation manuelle.
