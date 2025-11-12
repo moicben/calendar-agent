@@ -6,7 +6,7 @@ import time
 import random
 import logging
 import sys
-from typing import Optional
+from typing import Optional 
 
 from dotenv import load_dotenv
 
@@ -50,10 +50,6 @@ def _env_float(name: str, default: float) -> float:
 
 # Résout le chemin du navigateur Chrome
 def _resolve_chrome_path() -> str:
-    # Priority: explicit env → common macOS → common Linux
-    env_path = os.environ.get("CHROME_PATH")
-    if env_path and os.path.exists(env_path):
-        return env_path
 
     # macOS default install
     mac_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
@@ -61,17 +57,11 @@ def _resolve_chrome_path() -> str:
         return mac_path
 
     # Linux common paths
-    for p in [
-        "/usr/bin/google-chrome",
-        "/usr/bin/google-chrome-stable",
-        "/usr/bin/chromium",
-        "/usr/bin/chromium-browser",
-    ]:
-        if os.path.exists(p):
-            return p
+    linux_path = "/usr/bin/google-chrome"
+    if os.path.exists(linux_path):
+        return linux_path
 
-    # Fallback to env or mac path even if not present; Browser will raise useful error
-    return env_path or mac_path
+    return linux_path
 
 
 def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Browser:
@@ -228,6 +218,10 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
         
         # Créer le navigateur en utilisant la fonction helper
         browser = _create_browser(headless=headless, proxy=proxy_config)
+        
+        # Laisse 4 secondes au navigateur pour se charger
+        time.sleep(4)
+
         
         # Créer le prompt de réservation
         booking_task = _create_booking_prompt(calendar_url, user_info)
