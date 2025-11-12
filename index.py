@@ -166,7 +166,7 @@ Tu DOIS retourner exactement UNE de ces valeurs comme résultat final de la tâc
 Une fois que tu as déterminé le statut, RETOURNE IMMÉDIATEMENT le résultat final et ARRÊTE. Ne continue pas à boucler.
 
 Étapes explicites à suivre (sans rien modifier):
-1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt
+1) Lance le navigateur, ouvre un nouvel onglet, attends 30 secondes avant de commencer.
 2) Rends-toi sur l'URL du calendrier : "{url}". Si page introuvable/404 ou si le widget Calendly ne charge pas, retourne ERREUR_RESERVATION et ARRÊTE.
 3) Cherche des jours disponibles sur les 7 prochains jours. Si aucun créneau disponible, retourne AUCUN_CRENEAU_DISPONIBLE et ARRÊTE immédiatement.
 4) Clique sur le premier jour disponible dans le calendrier que tu as trouvé.
