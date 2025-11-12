@@ -4,9 +4,25 @@
 import os
 import time
 import random
+import logging
+import sys
 from typing import Optional
 
 from dotenv import load_dotenv
+
+# Configuration du logging pour browser-use
+# Rediriger tous les logs vers stdout pour PM2
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout,
+    force=True  # Force la reconfiguration même si déjà configuré
+)
+
+# Configurer spécifiquement browser-use pour qu'il logge vers stdout
+browser_use_logger = logging.getLogger('browser_use')
+browser_use_logger.setLevel(logging.INFO)
+browser_use_logger.propagate = True
 
 # Runtime deps from browser-use
 from browser_use import Agent, ChatOpenAI, Browser
@@ -15,14 +31,14 @@ from browser_use.browser import ProxySettings
 
 load_dotenv()
 
-
+# Récupère une variable d'environnement en booléen
 def _env_bool(name: str, default: bool) -> bool:
     raw = os.environ.get(name)
     if raw is None:
         return default
     return str(raw).strip().lower() in {"1", "true", "yes", "on"}
 
-
+# Récupère une variable d'environnement en float
 def _env_float(name: str, default: float) -> float:
     raw = os.environ.get(name)
     if raw is None:
@@ -32,7 +48,7 @@ def _env_float(name: str, default: float) -> float:
     except Exception:
         return default
 
-
+# Résout le chemin du navigateur Chrome
 def _resolve_chrome_path() -> str:
     # Priority: explicit env → common macOS → common Linux
     env_path = os.environ.get("CHROME_PATH")
@@ -91,14 +107,14 @@ def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Br
         minimum_wait_page_load_time=5 if proxy else 1,
     )
 
-
+# Attente simple et configurable pour laisser BrowserUse initialiser ses composants
 def _wait_for_browseruse_ready() -> None:
     # Attente simple et configurable pour laisser BrowserUse initialiser ses composants
     delay_s = _env_float("BROWSERUSE_STARTUP_DELAY_S", 10)
     if delay_s > 0:
         time.sleep(delay_s)
 
-
+# Charge un proxy aléatoire depuis le fichier proxies
 def _load_random_proxy(proxies_file: str = "proxies") -> Optional[ProxySettings]:
     """Charge un proxy aléatoire depuis le fichier proxies."""
     try:
@@ -132,7 +148,7 @@ def _load_random_proxy(proxies_file: str = "proxies") -> Optional[ProxySettings]
     except Exception:
         return None
 
-
+# Prompt concis pour la réservation
 def _create_booking_prompt(url: str, user_info: dict) -> str:
     """Crée un prompt concis pour la réservation."""
     return f"""
@@ -183,7 +199,7 @@ Contraintes:
 - Si champ avec demande d'informations complèmentaires ou autres champs similaires, se servir de {user_info.get('message')}
 """
 
-
+# Fonction principale de réservation de calendrier
 def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] = None, max_steps: int = 20) -> dict:
     """
     Réserve un créneau sur un calendrier donné.
