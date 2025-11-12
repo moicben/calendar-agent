@@ -157,15 +157,18 @@ Données utilisateur :
 - Type de RDV: {user_info.get('type_rdv')}
 - Message: {user_info.get('message')}
 
-Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
+IMPORTANT - Sortie finale requise :
+Tu DOIS retourner exactement UNE de ces valeurs comme résultat final de la tâche (utilise la fonction de retour de résultat de l'agent, pas juste evaluate) :
 - SUCCESS_RESERVATION
-- AUCUN_CRENEAU_DISPONIBLE
+- AUCUN_CRENEAU_DISPONIBLE  
 - ERREUR_RESERVATION
+
+Une fois que tu as déterminé le statut, RETOURNE IMMÉDIATEMENT le résultat final et ARRÊTE. Ne continue pas à boucler.
 
 Étapes explicites à suivre (sans rien modifier):
 1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt
-2) Rends-toi sur l'URL du calendrier : "{url}". Si page introuvable/404 ou si le widget Calendly ne charge pas, retourne ERREUR_RESERVATION.
-3) Cherche des jours disponibles sur les 7 prochains jours. Si aucun, retourne AUCUN_CRENEAU_DISPONIBLE.
+2) Rends-toi sur l'URL du calendrier : "{url}". Si page introuvable/404 ou si le widget Calendly ne charge pas, retourne ERREUR_RESERVATION et ARRÊTE.
+3) Cherche des jours disponibles sur les 7 prochains jours. Si aucun créneau disponible, retourne AUCUN_CRENEAU_DISPONIBLE et ARRÊTE immédiatement.
 4) Clique sur le premier jour disponible dans le calendrier que tu as trouvé.
 5) Clique sur le premier créneau horaire disponible dans le jour que tu as sélectionné.
 6) Clique sur "Suivant"ou "Next" pour accéder au formulaire de réservation.
@@ -181,7 +184,7 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
    - Type de RDV: {user_info.get('type_rdv')}
 9) En cas d'erreur de validation, corrige puis réessaie jusqu'à 5 fois.
 10) Clique sur "Confirmer l'événement", "Envoyer", "Soumettre" ou "Submit" pour soumettre le formulaire.
-11) Si confirmation visible "You are scheduled" ou "Vous avez rendez-vous" ou "Réservation confirmée" → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION
+11) Si confirmation visible "You are scheduled" ou "Vous avez rendez-vous" ou "Réservation confirmée" → retourne SUCCESS_RESERVATION et ARRÊTE, sinon → retourne ERREUR_RESERVATION et ARRÊTE
 
 Contraintes:
 - Agis de façon autonome; n'attends aucune confirmation manuelle.
@@ -190,6 +193,7 @@ Contraintes:
 - Privilégier toujours la visioconférence à l'appel par téléphone, dans le lieu du RDV ou option de réservation. (Google Meet de préférence).
 - Dans le message/Notes du RDV utiliser des retours en appui de "Entrer" pour chaque ligne de texte.
 - Si champ avec demande d'informations complèmentaires ou autres champs similaires, se servir de {user_info.get('message')}
+- CRITIQUE: Dès que tu as déterminé le statut final (SUCCESS_RESERVATION, AUCUN_CRENEAU_DISPONIBLE, ou ERREUR_RESERVATION), retourne ce statut comme résultat final de la tâche et ARRÊTE immédiatement. Ne continue pas à vérifier ou à boucler.
 """
 
 # Fonction principale de réservation de calendrier
