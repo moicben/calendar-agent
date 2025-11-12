@@ -193,7 +193,7 @@ Contraintes:
 - Privilégier toujours la visioconférence à l'appel par téléphone, dans le lieu du RDV ou option de réservation. (Google Meet de préférence).
 - Dans le message/Notes du RDV utiliser des retours en appui de "Entrer" pour chaque ligne de texte.
 - Si champ avec demande d'informations complèmentaires ou autres champs similaires, se servir de {user_info.get('message')}
-- CRITIQUE: Dès que tu as déterminé le statut final (SUCCESS_RESERVATION, AUCUN_CRENEAU_DISPONIBLE, ou ERREUR_RESERVATION), retourne ce statut comme résultat final de la tâche et ARRÊTE immédiatement. Ne continue pas à vérifier ou à boucler.
+- CRITIQUE: Dès que tu as déterminé plusieurs fois le statut final (SUCCESS_RESERVATION, AUCUN_CRENEAU_DISPONIBLE, ou ERREUR_RESERVATION), retourne ce statut comme résultat final de la tâche et ARRÊTE immédiatement. Ne continue pas à vérifier ou à boucler.
 """
 
 # Fonction principale de réservation de calendrier
