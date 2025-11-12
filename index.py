@@ -103,8 +103,8 @@ def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Br
         enable_default_extensions=False,
         proxy=proxy,
         args=browser_args,
-        wait_for_network_idle_page_load_time=3,
-        minimum_wait_page_load_time=5 if proxy else 1,
+        wait_for_network_idle_page_load_time=5,
+        minimum_wait_page_load_time=10,
     )
 
 # Charge un proxy aléatoire depuis le fichier proxies
