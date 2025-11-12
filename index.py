@@ -66,7 +66,7 @@ def _resolve_chrome_path() -> str:
 
 def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Browser:
     chrome_path = _resolve_chrome_path()
-    devtools_enabled = _env_bool("BROWSERUSE_DEVTOOLS", not headless)
+    devtools_enabled = False
 
     browser_args = [
         "--no-first-run",
@@ -221,8 +221,8 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
         # Créer le navigateur en utilisant la fonction helper
         browser = _create_browser(headless=headless, proxy=proxy_config)
         
-        # Laisse 2 secondes au navigateur pour se charger
-        time.sleep(2)
+        # Laisse 4 secondes au navigateur pour se charger
+        time.sleep(4)
 
         
         # Créer le prompt de réservation
