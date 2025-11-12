@@ -1,3 +1,5 @@
+# python3 server.py
+
 import os
 import sys
 import time
@@ -146,9 +148,9 @@ def _load_random_proxy(proxies_file: str = "proxies") -> Optional[ProxySettings]
 def _create_booking_prompt(url: str, user_info: dict) -> str:
     """Crée un prompt concis pour la réservation."""
     return f"""
-Mission: Réserver un créneau sur {url}.
+Mission: Réserver un rendez-vous Calendly sur l'URL suivante: {url}.
 
-Données:
+Données utilisateur :
 - Nom: {user_info.get('nom')}
 - Email: {user_info.get('email')}
 - Téléphone: {user_info.get('telephone')}
@@ -164,11 +166,12 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
 - ERREUR_RESERVATION
 
 Étapes:
-1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt, puis va sur {url}. Si page introuvable/404 ou si le widget calendrier (Calendly, cal.com, Google Calendar etc.) ne charge pas → ERREUR_RESERVATION.
-2) Cherche des créneaux sur les 5 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE.
-3) Sélectionne le premier jour disponible dans le calendrier conforme aux préférences (généralement couleur plus visible ou contraste plus élevé).
-4) Sélectionner le premier créneau horaire disponible dans le jour sélectionné.
-4) Remplis le formulaire:
+1) Lance le navigateur, ouvre un nouvel onglet, attends que le navigateur soit prêt, puis va sur {url}. Si page introuvable/404 ou si le widget Calendly ne charge pas → ERREUR_RESERVATION.
+2) Cherche des jours disponibles sur les 7 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE.
+3) Clique sur le premier jour disponible dans le calendrier que tu as trouvé.
+4) Clique sur le premier créneau horaire disponible dans le jour que tu as sélectionné.
+5) Clique sur "Continuer"ou "Continue" pour accéder au formulaire de réservation.
+6) Une fois le formulaire affiché, complète-le avec les informations suivantes:
    - Nom complet: {user_info.get('nom')}
    - Email: {user_info.get('email')}
    - Téléphone: {user_info.get('telephone')} (adapter le format si requis)
@@ -177,8 +180,8 @@ Sortie attendue (retourne exactement UNE de ces valeurs, sans autre texte):
    - Listes déroulantes obligatoires: première option raisonnable.
    - Cases à cocher obligatoires: cocher.
    - Type de RDV: {user_info.get('type_rdv')}
-5) En cas d'erreur de validation, corrige puis réessaie jusqu'à 3 fois.
-6) Soumets. Si confirmation visible → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION.
+7) En cas d'erreur de validation, corrige puis réessaie jusqu'à 5 fois.
+8) Clique sur "Réserver ", "Envoyer", "Soumettre" ou "Submit" pour soumettre le formulaire. Si confirmation visible → SUCCESS_RESERVATION, sinon → ERREUR_RESERVATION.
 
 Contraintes:
 - Agis de façon autonome; n'attends aucune confirmation manuelle.
