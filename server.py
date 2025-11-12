@@ -99,14 +99,14 @@ def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Br
         enable_default_extensions=False,
         proxy=proxy,
         args=browser_args,
-        wait_for_network_idle_page_load_time=3 if proxy else 0.5,
-        minimum_wait_page_load_time=1 if proxy else 0.25,
+        wait_for_network_idle_page_load_time=3 if proxy else 3,
+        minimum_wait_page_load_time=5 if proxy else 5,
     )
 
 
 def _wait_for_browseruse_ready() -> None:
     # Attente simple et configurable pour laisser BrowserUse initialiser ses composants
-    delay_s = _env_float("BROWSERUSE_STARTUP_DELAY_S", 1.5)
+    delay_s = _env_float("BROWSERUSE_STARTUP_DELAY_S", 10)
     if delay_s > 0:
         time.sleep(delay_s)
 
