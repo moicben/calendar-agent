@@ -91,8 +91,10 @@ def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Br
     return Browser(
         executable_path=chrome_path,
         headless=headless,
+        devtools=devtools_enabled,
         enable_default_extensions=False,
         args=browser_args,
+        proxy=proxy,
         wait_for_network_idle_page_load_time=5,
         minimum_wait_page_load_time=10,
     )
@@ -155,7 +157,7 @@ Tu DOIS retourner exactement UNE de ces valeurs comme résultat final de la tâc
 
 Une fois que tu as déterminé le statut, RETOURNE IMMÉDIATEMENT le résultat final et ARRÊTE. Ne continue pas à boucler.
 
-Étapes explicites à suivre (sans rien modifier):
+Étapes à suivre:
 1) Lance le navigateur, ouvre un nouvel onglet, attends JUSQU'À que le navigateur soit prêt
 2) Rends-toi sur l'URL du calendrier : "{url}". Si page introuvable/404 ou si le widget Calendly ne charge pas, retourne ERREUR_RESERVATION et ARRÊTE.
 3) Cherche des jours disponibles sur les 7 prochains jours. Si aucun créneau disponible, retourne AUCUN_CRENEAU_DISPONIBLE et ARRÊTE immédiatement.
@@ -172,8 +174,8 @@ Une fois que tu as déterminé le statut, RETOURNE IMMÉDIATEMENT le résultat f
    - Listes déroulantes obligatoires: première option raisonnable.
    - Cases à cocher obligatoires: cocher.
    - Type de RDV: {user_info.get('type_rdv')}
-9) En cas d'erreur de validation, corrige puis réessaie jusqu'à 5 fois.
-10) Clique sur "Confirmer l'événement", "Envoyer", "Soumettre" ou "Submit" pour soumettre le formulaire.
+9) Clique sur "Confirmer l'événement", "Envoyer", "Soumettre" ou "Submit" pour soumettre le formulaire.
+10) En cas d'erreur de validation, ou champs incomplets, complète et corrige les champs en question puis réessaie de soumettre le formulaire.
 11) Si confirmation visible "You are scheduled" ou "Vous avez rendez-vous" ou "Réservation confirmée" → retourne SUCCESS_RESERVATION et ARRÊTE, sinon → retourne ERREUR_RESERVATION et ARRÊTE
 
 Contraintes:
