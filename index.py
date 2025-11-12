@@ -248,14 +248,6 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
             output_model_schema=BookingOutput,
         )
         
-        # Attendre que le navigateur soit initialisé APRÈS la création de l'agent
-        # Le navigateur se lance de manière lazy quand l'agent est créé
-        delay_s = _env_float("BROWSERUSE_STARTUP_DELAY_S", 20)
-        if delay_s > 0:
-            logging.info(f"Attente de l'initialisation du navigateur ({delay_s}s)...")
-            time.sleep(delay_s)
-            logging.info("Démarrage de l'exécution de l'agent...")
-        
         # Exécuter la réservation
         result = agent.run_sync(max_steps=max_steps)
         
