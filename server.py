@@ -1,16 +1,12 @@
-# python3 server.py
+# Module Python pour la réservation de calendriers
+# Utilisé par agi-engine/services/booker/book.js
 
 import os
-import sys
 import time
 import random
 from typing import Optional
-import json
 
-from fastapi import FastAPI
-from pydantic import BaseModel
 from dotenv import load_dotenv
-from enum import Enum
 
 # Runtime deps from browser-use
 from browser_use import Agent, ChatOpenAI, Browser
@@ -18,8 +14,6 @@ from browser_use.browser import ProxySettings
 
 
 load_dotenv()
-
-app = FastAPI(title="Calendar Booking API", version="0.1.0")
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -190,130 +184,30 @@ Contraintes:
 """
 
 
-# -------------------
-# Booking models
-# -------------------
-class BookingStatus(str, Enum):
-    SUCCESS_RESERVATION = "SUCCESS_RESERVATION"
-    AUCUN_CRENEAU_DISPONIBLE = "AUCUN_CRENEAU_DISPONIBLE"
-    ERREUR_RESERVATION = "ERREUR_RESERVATION"
-
-
-class BookingOutput(BaseModel):
-    status: BookingStatus
-
-
-class BookingRequest(BaseModel):
-    calendar_url: str
-    nom: str
-    email: str
-    telephone: str
-    site_web: str
-    societe: str
-    preference_creneau: str
-    type_rdv: str
-    message: str
-    headless: Optional[bool] = None
-    max_steps: Optional[int] = 20
-
-
-class BookingResponse(BaseModel):
-    ok: bool
-    status: Optional[str] = None
-    error: Optional[str] = None
-
-
-_VALID_STATUSES = {"SUCCESS_RESERVATION", "AUCUN_CRENEAU_DISPONIBLE", "ERREUR_RESERVATION"}
-
-
-def _coerce_status(value):
-    """Essaie d'extraire un statut valide à partir d'une valeur hétérogène.
-
-    Gère: Enum BookingStatus, dict {status}, chaîne brute, chaîne JSON,
-    et chaîne contenant le token du statut.
+def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] = None, max_steps: int = 20) -> dict:
     """
-    if value is None:
-        return None
-
-    # Enum → string
-    if isinstance(value, Enum):
-        value = value.value
-
-    # dict avec clé status
-    if isinstance(value, dict):
-        s = value.get("status")
-        return s if isinstance(s, str) and s in _VALID_STATUSES else None
-
-    # chaîne brute ou JSON
-    if isinstance(value, str):
-        if value in _VALID_STATUSES:
-            return value
-        try:
-            obj = json.loads(value)
-            if isinstance(obj, dict):
-                s = obj.get("status")
-                if isinstance(s, str) and s in _VALID_STATUSES:
-                    return s
-        except Exception:
-            pass
-        for s in _VALID_STATUSES:
-            if s in value:
-                return s
-
-    return None
-
-
-def _extract_booking_status(result) -> str:
-    """Extrait un statut robuste depuis le résultat de l'agent."""
-    s = _coerce_status(getattr(result, "status", None))
-    if s:
-        return s
-
-    if isinstance(result, list) and result:
-        last = result[-1]
-        s = (
-            _coerce_status(getattr(last, "status", None))
-            or _coerce_status(getattr(last, "data", None))
-            or _coerce_status(getattr(last, "result", None))
-        )
-        if s:
-            return s
-
-    s = _coerce_status(result)
-    return s or "ERREUR_RESERVATION"
-
-
-@app.get("/health")
-def health() -> dict:
-    return {"status": "ok"}
-
-
-@app.post("/book-calendar", response_model=BookingResponse)
-def book_calendar(req: BookingRequest) -> BookingResponse:
-    """
-    Endpoint pour réserver un créneau sur un calendrier donné.
+    Réserve un créneau sur un calendrier donné.
     
     Args:
-        req: Requête contenant l'URL du calendrier et les informations utilisateur
+        calendar_url: URL du calendrier à réserver
+        user_info: Dictionnaire contenant les informations utilisateur:
+            - nom: str
+            - email: str
+            - telephone: str
+            - site_web: str
+            - societe: str
+            - preference_creneau: str
+            - type_rdv: str
+            - message: str
+        headless: Mode headless du navigateur (None = utiliser env var)
+        max_steps: Nombre maximum d'étapes pour l'agent
         
     Returns:
-        BookingResponse: Résultat de la tentative de réservation
+        dict: {"raw_result": <résultat agent>, "error": None} ou {"raw_result": None, "error": "<message>"}
     """
     # Par défaut, afficher le navigateur
     headless_default = _env_bool("BROWSERUSE_HEADLESS", False)
-    headless = headless_default if req.headless is None else bool(req.headless)
-    
-    # Construire le dictionnaire d'informations utilisateur depuis la requête
-    user_info = {
-        "nom": req.nom,
-        "email": req.email,
-        "telephone": req.telephone,
-        "site_web": req.site_web,
-        "societe": req.societe,
-        "preference_creneau": req.preference_creneau,
-        "type_rdv": req.type_rdv,
-        "message": req.message,
-    }
+    headless = headless_default if headless is None else bool(headless)
     
     try:
         # Charger un proxy aléatoire
@@ -324,9 +218,21 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
         _wait_for_browseruse_ready()
         
         # Créer le prompt de réservation
-        booking_task = _create_booking_prompt(req.calendar_url, user_info)
+        booking_task = _create_booking_prompt(calendar_url, user_info)
         
         # Créer l'agent avec le modèle de sortie
+        # Note: On garde BookingOutput pour structurer la sortie, mais on retourne le résultat brut
+        from pydantic import BaseModel
+        from enum import Enum
+        
+        class BookingStatus(str, Enum):
+            SUCCESS_RESERVATION = "SUCCESS_RESERVATION"
+            AUCUN_CRENEAU_DISPONIBLE = "AUCUN_CRENEAU_DISPONIBLE"
+            ERREUR_RESERVATION = "ERREUR_RESERVATION"
+        
+        class BookingOutput(BaseModel):
+            status: BookingStatus
+        
         agent = Agent(
             task=booking_task,
             llm=ChatOpenAI(model="gpt-4o-mini"),
@@ -335,10 +241,7 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
         )
         
         # Exécuter la réservation
-        result = agent.run_sync(max_steps=req.max_steps or 20)
-
-        # Extraire le statut de manière robuste
-        status = _extract_booking_status(result)
+        result = agent.run_sync(max_steps=max_steps)
         
         # Nettoyer le navigateur
         try:
@@ -346,23 +249,34 @@ def book_calendar(req: BookingRequest) -> BookingResponse:
         except Exception:
             pass
         
-        return BookingResponse(ok=True, status=status)
+        # Convertir le résultat en format sérialisable pour JSON
+        # Le résultat peut être un objet Pydantic, une liste, ou autre
+        import json as json_module
+        
+        def serialize_result(obj):
+            """Sérialise le résultat pour JSON."""
+            try:
+                # Si c'est un modèle Pydantic, convertir en dict
+                if hasattr(obj, 'model_dump'):
+                    return obj.model_dump()
+                elif hasattr(obj, 'dict'):
+                    return obj.dict()
+                # Si c'est une liste, sérialiser chaque élément
+                elif isinstance(obj, list):
+                    return [serialize_result(item) for item in obj]
+                # Si c'est un dict, sérialiser récursivement
+                elif isinstance(obj, dict):
+                    return {k: serialize_result(v) for k, v in obj.items()}
+                # Sinon, convertir en string
+                else:
+                    return str(obj)
+            except Exception:
+                return str(obj)
+        
+        serialized_result = serialize_result(result)
+        
+        # Retourner le résultat brut (sans extraction de statut)
+        return {"raw_result": serialized_result, "error": None}
         
     except Exception as e:
-        return BookingResponse(ok=False, error=str(e))
-
-
-def main() -> None:
-    try:
-        import uvicorn  # noqa: WPS433
-    except Exception as e:  # pragma: no cover
-        print("[server] uvicorn non disponible, installez les dépendances (requirements.txt)", file=sys.stderr)
-        raise e
-
-    host = os.environ.get("HOST", "0.0.0.0")
-    port = int(os.environ.get("PORT", "8080"))
-    uvicorn.run("server:app", host=host, port=port, reload=_env_bool("UVICORN_RELOAD", False))
-
-
-if __name__ == "__main__":
-    main()
+        return {"raw_result": None, "error": str(e)}
