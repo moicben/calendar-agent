@@ -106,8 +106,8 @@ def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Br
         enable_default_extensions=False,
         args=browser_args,
         proxy=proxy,
-        wait_for_network_idle_page_load_time=5,
-        minimum_wait_page_load_time=10,
+        wait_for_network_idle_page_load_time=10,  # Augmenté de 5 à 10 secondes
+        minimum_wait_page_load_time=15,  # Augmenté de 10 à 15 secondes
     )
 
 # Charge un proxy aléatoire depuis le fichier proxies
@@ -152,8 +152,15 @@ Réserve un rendez-vous Calendly sur {url} avec ces informations:
 Nom: {user_info.get('nom')} | Email: {user_info.get('email')} | Téléphone: {user_info.get('telephone')}
 Société: {user_info.get('societe')} | Site: {user_info.get('site_web')} | Message: {user_info.get('message')}
 
+RÈGLES IMPORTANTES:
+- Calendly est une application SPA (Single Page Application) qui peut prendre 10-15 secondes à charger complètement
+- Si la page semble vide au début, ATTENDS au moins 15 secondes avant de prendre une décision
+- NE JAMAIS ouvrir un nouvel onglet si la page est en cours de chargement
+- Attends que les éléments interactifs apparaissent (boutons, calendrier, créneaux)
+- Si après 20 secondes la page est toujours vide, alors → ERREUR_RESERVATION
+
 Étapes à suivre:
-1) Va-sur {url}. Patiente jusqu'à ce que la page soit chargée. Si page introuvable Calendly ou ne charge pas → ERREUR_RESERVATION
+1) Va sur {url}. ATTENDS 15 secondes minimum pour que Calendly charge complètement. Ne crée JAMAIS un nouvel onglet pendant le chargement.
 2) Cherche des créneaux disponibles sur les 7 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE
 3) Sélectionne le premier créneau disponible
 4) Valide le créneau en cliquant sur "Suivant" ou "Next"
