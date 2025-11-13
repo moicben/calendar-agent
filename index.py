@@ -172,7 +172,7 @@ Préfère visioconférence (Google Meet) si option disponible.
 """
 
 # Fonction principale de réservation de calendrier
-def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] = None, max_steps: int = 20) -> dict:
+def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] = None, max_steps: int = 15) -> dict:
     """
     Réserve un créneau sur un calendrier donné.
     
