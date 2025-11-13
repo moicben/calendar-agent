@@ -37,7 +37,7 @@ browser_args = [
 
 # Prompt pour la réservation
 booking_prompt = f"""
-Mission: Réserver un rendez-vous Calendly sur l'URL suivante: {calendar_url}.
+Va sur {calendar_url} et réserve un rendez-vous avec les informations suivantes:
 
 Données utilisateur :
 - Nom: {user_info.get('nom')}
