@@ -97,8 +97,6 @@ def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Br
             "--disable-web-security",
             "--disable-features=VizDisplayCompositor",
             "--window-size=960,1080",
-            "--appmode",
-            "--disable-gpu-sandbox",
         ])
 
     return Browser(
@@ -205,7 +203,7 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
         # Créer l'agent avec le modèle de sortie
         agent = Agent(
             task=booking_task,
-            llm=ChatOpenAI(model="gpt-4o-mini"),
+            llm=ChatOpenAI(model="gpt-5-mini"),
             browser=browser,
             output_model_schema=BookingOutput,
         )
