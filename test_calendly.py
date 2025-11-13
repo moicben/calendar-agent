@@ -1,5 +1,4 @@
 import os
-import time
 from dotenv import load_dotenv
 from browser_use import Agent, ChatOpenAI, Browser
 from pydantic import BaseModel
@@ -59,14 +58,13 @@ Tu DOIS retourner exactement UNE de ces valeurs comme résultat final de la tâc
 Une fois que tu as déterminé le statut, RETOURNE IMMÉDIATEMENT le résultat final et ARRÊTE. Ne continue pas à boucler.
 
 Étapes à suivre:
-1) Lance le navigateur, ouvre un nouvel onglet, attends JUSQU'À que le navigateur soit prêt
-2) Rends-toi sur l'URL du calendrier : "{calendar_url}". Si page introuvable/404 ou si le widget Calendly ne charge pas, retourne ERREUR_RESERVATION et ARRÊTE.
-3) Cherche des jours disponibles sur les 7 prochains jours. Si aucun créneau disponible, retourne AUCUN_CRENEAU_DISPONIBLE et ARRÊTE immédiatement.
-4) Clique sur le premier jour disponible dans le calendrier que tu as trouvé.
-5) Clique sur le premier créneau horaire disponible dans le jour que tu as sélectionné.
-6) Clique sur "Suivant"ou "Next" pour accéder au formulaire de réservation.
-7) Une fois le formulaire affiché, analyse-le pour identifier les champs obligatoires
-8) Remplis les champs obligatoires identifiés avec parcimonie les informations suivantes:
+1) Rends-toi sur l'URL du calendrier : "{calendar_url}". Si page introuvable/404 ou si le widget Calendly ne charge pas, retourne ERREUR_RESERVATION et ARRÊTE.
+2) Cherche des jours disponibles sur les 7 prochains jours. Si aucun créneau disponible, retourne AUCUN_CRENEAU_DISPONIBLE et ARRÊTE immédiatement.
+3) Clique sur le premier jour disponible dans le calendrier que tu as trouvé.
+4) Clique sur le premier créneau horaire disponible dans le jour que tu as sélectionné.
+5) Clique sur "Suivant"ou "Next" pour accéder au formulaire de réservation.
+6) Une fois le formulaire affiché, analyse-le pour identifier les champs obligatoires
+7) Remplis les champs obligatoires identifiés avec parcimonie les informations suivantes:
    - Nom complet: {user_info.get('nom')}
    - Email: {user_info.get('email')}
    - Téléphone: {user_info.get('telephone')} (adapter le format si requis)
@@ -75,9 +73,9 @@ Une fois que tu as déterminé le statut, RETOURNE IMMÉDIATEMENT le résultat f
    - Listes déroulantes obligatoires: première option raisonnable.
    - Cases à cocher obligatoires: cocher.
    - Type de RDV: {user_info.get('type_rdv')}
-9) Clique sur "Confirmer l'événement", "Envoyer", "Soumettre" ou "Submit" pour soumettre le formulaire.
-10) En cas d'erreur de validation, ou champs incomplets, complète et corrige les champs en question puis réessaie de soumettre le formulaire.
-11) Si confirmation visible "You are scheduled" ou "Vous avez rendez-vous" ou "Réservation confirmée" → retourne SUCCESS_RESERVATION et ARRÊTE, sinon → retourne ERREUR_RESERVATION et ARRÊTE
+8) Clique sur "Confirmer l'événement", "Envoyer", "Soumettre" ou "Submit" pour soumettre le formulaire.
+9) En cas d'erreur de validation, ou champs incomplets, complète et corrige les champs en question puis réessaie de soumettre le formulaire.
+10) Si confirmation visible "You are scheduled" ou "Vous avez rendez-vous" ou "Réservation confirmée" → retourne SUCCESS_RESERVATION et ARRÊTE, sinon → retourne ERREUR_RESERVATION et ARRÊTE
 
 Contraintes:
 - Agis de façon autonome; n'attends aucune confirmation manuelle.
@@ -115,21 +113,14 @@ def serialize_result(obj):
 
 if __name__ == "__main__":
     try:
-        # Créer le navigateur sans proxy
+        # Créer le navigateur sans proxy (comme test.py)
         browser = Browser(
             executable_path=linux_path,
             headless=False,
-            devtools=False,
-            enable_default_extensions=False,
             args=browser_args,
-            wait_for_network_idle_page_load_time=5,
-            minimum_wait_page_load_time=10,
         )
         
-        # Attendre que le navigateur soit prêt
-        time.sleep(4)
-        
-        # Créer l'agent
+        # Créer l'agent immédiatement (pas de sleep)
         agent = Agent(
             task=booking_prompt,
             llm=ChatOpenAI(model="gpt-4o-mini"),
@@ -156,4 +147,3 @@ if __name__ == "__main__":
         print(f"Erreur: {e}")
         import traceback
         traceback.print_exc()
-
