@@ -146,23 +146,29 @@ def _load_random_proxy(proxies_file: str = "proxies") -> Optional[ProxySettings]
 
 # Prompt concis pour la réservation
 def _create_booking_prompt(url: str, user_info: dict) -> str:
-    """Crée un prompt concis pour la réservation."""
+    """Crée un prompt minimal, optimisé pour l'agent browser-use."""
     return f"""
-Réserve un rendez-vous Calendly sur {url} avec ces informations:
-Nom: {user_info.get('nom')} | Email: {user_info.get('email')} | Téléphone: {user_info.get('telephone')}
-Société: {user_info.get('societe')} | Site: {user_info.get('site_web')} | Message: {user_info.get('message')}
+Objectif: réserver un rendez-vous sur {url}.
 
-Étapes à suivre:
-1) Va-sur {url}. Patiente jusqu'à ce que la page soit chargée. Si page introuvable Calendly ou ne charge pas → ERREUR_RESERVATION
-2) Cherche des créneaux disponibles sur les 7 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE
-3) Sélectionne le premier créneau disponible
-4) Valide le créneau en cliquant sur "Suivant" ou "Next"
-5) Remplis le formulaire avec les informations fournies.
-6) Soumets le formulaire, Si confirmation visible -> SUCCESS_RESERVATION, sinon -> ERREUR_RESERVATION
+Infos:
+- Nom: {user_info.get('nom')}
+- Email: {user_info.get('email')}
+- Téléphone: {user_info.get('telephone')}
+- Société: {user_info.get('societe')}
+- Site: {user_info.get('site_web')}
+- Message: {user_info.get('message')}
 
-Retourne UNE de ces valeurs: SUCCESS_RESERVATION, AUCUN_CRENEAU_DISPONIBLE, ERREUR_RESERVATION
-Préfère visioconférence (Google Meet) si option disponible.
-"""
+Règles:
+- Ouvre {url} et attends le chargement.
+- Cherche un créneau disponible dans les 7 prochains jours; prends le premier.
+- Clique pour valider/continuer, remplis le formulaire avec les infos ci-dessus, soumets.
+- Préfère visioconférence (Google Meet) si l’option est disponible.
+- Si aucune dispo: AUCUN_CRENEAU_DISPONIBLE.
+- Si la page Calendly est introuvable ou si une erreur empêche la soumission: ERREUR_RESERVATION.
+
+Réponse attendue (texte brut, rien d'autre):
+SUCCESS_RESERVATION | AUCUN_CRENEAU_DISPONIBLE | ERREUR_RESERVATION
+""".strip()
 
 # Fonction principale de réservation de calendrier
 def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] = None, max_steps: int = 20) -> dict:
@@ -205,7 +211,6 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
             task=booking_task,
             llm=ChatOpenAI(model="gpt-4o-mini"),
             browser=browser,
-            output_model_schema=BookingOutput,
         )
         
         # Exécuter la réservation
