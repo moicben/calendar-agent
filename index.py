@@ -146,17 +146,11 @@ def _load_random_proxy(proxies_file: str = "proxies") -> Optional[ProxySettings]
 
 # Prompt concis pour la réservation
 def _create_booking_prompt(url: str, user_info: dict) -> str:
-    """Crée un prompt minimal, optimisé pour l'agent browser-use."""
+    """Crée un prompt concis pour la réservation."""
     return f"""
-Objectif: réserver un rendez-vous sur {url}.
-
-Infos:
-- Nom: {user_info.get('nom')}
-- Email: {user_info.get('email')}
-- Téléphone: {user_info.get('telephone')}
-- Société: {user_info.get('societe')}
-- Site: {user_info.get('site_web')}
-- Message: {user_info.get('message')}
+Réserve un rendez-vous Calendly sur {url} avec ces informations:
+Nom: {user_info.get('nom')} | Email: {user_info.get('email')} | Téléphone: {user_info.get('telephone')}
+Société: {user_info.get('societe')} | Site: {user_info.get('site_web')} | Message: {user_info.get('message')}
 
 Règles:
 - Ouvre {url} et attends le chargement.
@@ -166,8 +160,7 @@ Règles:
 - Si aucune dispo: AUCUN_CRENEAU_DISPONIBLE.
 - Si la page Calendly est introuvable ou si une erreur empêche la soumission: ERREUR_RESERVATION.
 
-Réponse attendue (texte brut, rien d'autre):
-SUCCESS_RESERVATION | AUCUN_CRENEAU_DISPONIBLE | ERREUR_RESERVATION
+Réponse attendue (texte brut, rien d'autre): SUCCESS_RESERVATION | AUCUN_CRENEAU_DISPONIBLE | ERREUR_RESERVATION
 """.strip()
 
 # Fonction principale de réservation de calendrier
