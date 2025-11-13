@@ -7,6 +7,8 @@ import random
 import logging
 import sys
 from typing import Optional 
+from enum import Enum
+from pydantic import BaseModel
 
 from dotenv import load_dotenv
 
@@ -30,6 +32,15 @@ from browser_use.browser import ProxySettings
 
 
 load_dotenv()
+
+# Modèles de sortie pour l'agent
+class BookingStatus(str, Enum):
+    SUCCESS_RESERVATION = "SUCCESS_RESERVATION"
+    AUCUN_CRENEAU_DISPONIBLE = "AUCUN_CRENEAU_DISPONIBLE"
+    ERREUR_RESERVATION = "ERREUR_RESERVATION"
+
+class BookingOutput(BaseModel):
+    status: BookingStatus
 
 # Récupère une variable d'environnement en booléen
 def _env_bool(name: str, default: bool) -> bool:
@@ -186,26 +197,10 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
         # Créer le navigateur en utilisant la fonction helper
         browser = _create_browser(headless=headless, proxy=proxy_config)
         
-        # Laisse 4 secondes au navigateur pour se charger
-        time.sleep(4)
-
-        
         # Créer le prompt de réservation
         booking_task = _create_booking_prompt(calendar_url, user_info)
         
         # Créer l'agent avec le modèle de sortie
-        # Note: On garde BookingOutput pour structurer la sortie, mais on retourne le résultat brut
-        from pydantic import BaseModel
-        from enum import Enum
-        
-        class BookingStatus(str, Enum):
-            SUCCESS_RESERVATION = "SUCCESS_RESERVATION"
-            AUCUN_CRENEAU_DISPONIBLE = "AUCUN_CRENEAU_DISPONIBLE"
-            ERREUR_RESERVATION = "ERREUR_RESERVATION"
-        
-        class BookingOutput(BaseModel):
-            status: BookingStatus   
-        
         agent = Agent(
             task=booking_task,
             llm=ChatOpenAI(model="gpt-4o-mini"),
