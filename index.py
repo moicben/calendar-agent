@@ -239,7 +239,7 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
             ERREUR_RESERVATION = "ERREUR_RESERVATION"
         
         class BookingOutput(BaseModel):
-            status: BookingStatus
+            status: BookingStatus   
         
         agent = Agent(
             task=booking_task,
