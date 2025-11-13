@@ -123,7 +123,7 @@ if __name__ == "__main__":
         # Créer l'agent immédiatement (pas de sleep)
         agent = Agent(
             task=booking_prompt,
-            llm=ChatOpenAI(model="gpt-5-nano"),
+            llm=ChatOpenAI(model="gpt-5-mini"),
             browser=browser,
             output_model_schema=BookingOutput,
         )
