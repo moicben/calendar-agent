@@ -61,7 +61,7 @@ def _resolve_chrome_path() -> str:
     if os.path.exists(linux_path):
         return linux_path
 
-    return linux_path
+    return linux_path | mac_path
 
 
 def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Browser:
