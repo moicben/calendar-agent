@@ -1,6 +1,8 @@
 import os
 from browser_use import Agent, ChatOpenAI, Browser
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from enum import Enum
 
 load_dotenv()
 
@@ -40,10 +42,19 @@ task = f"""Va sur {calendar_url} et réserve un rendez-vous Calendly avec ces in
 
 Remplis le formulaire et confirme la réservation. Si aucun créneau disponible, indique-le."""
 
+class BookingStatus(str, Enum):
+    SUCCESS_RESERVATION = "SUCCESS_RESERVATION"
+    AUCUN_CRENEAU_DISPONIBLE = "AUCUN_CRENEAU_DISPONIBLE"
+    ERREUR_RESERVATION = "ERREUR_RESERVATION"
+
+class BookingOutput(BaseModel):
+    status: BookingStatus
+
 agent = Agent(
     task=task,
     llm=ChatOpenAI(model="gpt-4o-mini"),
     browser=browser,
+    output_model_schema=BookingOutput,
 )
 
 result = agent.run_sync(max_steps=20)
