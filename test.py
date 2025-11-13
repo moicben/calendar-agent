@@ -1,4 +1,8 @@
+import os
 from browser_use import Agent, ChatOpenAI, Browser
+from dotenv import load_dotenv
+
+load_dotenv()
 
 linux_path = "/usr/bin/google-chrome"
 
