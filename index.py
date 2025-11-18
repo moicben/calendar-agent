@@ -161,7 +161,7 @@ RÈGLES IMPORTANTES:
 
 Étapes à suivre:
 1) Va sur {url}. ATTENDS 15 secondes minimum pour que Calendly charge complètement. Ne crée JAMAIS un nouvel onglet pendant le chargement.
-2) Cherche des créneaux disponibles à partir de mercredi sur les 7 prochains jours. Si aucun → AUCUN_CRENEAU_DISPONIBLE
+2) Cherche {user_info.get('preference_creneau')}. Si aucun → AUCUN_CRENEAU_DISPONIBLE
 3) Sélectionne le premier créneau disponible
 4) Valide le créneau en cliquant sur "Suivant" ou "Next"
 5) Remplis le formulaire avec les informations fournies.
