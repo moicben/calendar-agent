@@ -164,7 +164,7 @@ RÈGLES IMPORTANTES:
 2) Cherche {user_info.get('preference_creneau')}. Si aucun → AUCUN_CRENEAU_DISPONIBLE
 3) Sélectionne le premier créneau disponible
 4) Valide le créneau en cliquant sur "Suivant" ou "Next"
-5) Remplis le formulaire avec les informations fournies.
+5) Remplis le formulaire avec les informations fournies (respecter le format des champs).
 6) Soumets le formulaire, si confirmation visible "Vous avez rendez-vous" ou "You are scheduled". -> SUCCESS_RESERVATION, sinon -> ERREUR_RESERVATION
 
 Retourne UNE de ces valeurs: SUCCESS_RESERVATION, AUCUN_CRENEAU_DISPONIBLE, ERREUR_RESERVATION
@@ -198,8 +198,8 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
     headless = headless_default if headless is None else bool(headless)
     
     try:
-        # Charger un proxy aléatoire
-        proxy_config = _load_random_proxy()
+        # Proxy désactivé
+        proxy_config = None
         
         # Créer le navigateur en utilisant la fonction helper
         browser = _create_browser(headless=headless, proxy=proxy_config)
