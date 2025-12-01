@@ -28,7 +28,6 @@ browser_use_logger.propagate = True
 
 # Runtime deps from browser-use
 from browser_use import Agent, ChatOpenAI, Browser
-from browser_use.browser import ProxySettings
 
 
 load_dotenv()
@@ -42,107 +41,6 @@ class BookingStatus(str, Enum):
 class BookingOutput(BaseModel):
     status: BookingStatus
 
-# Récupère une variable d'environnement en booléen
-def _env_bool(name: str, default: bool) -> bool:
-    raw = os.environ.get(name)
-    if raw is None:
-        return default
-    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
-
-# Récupère une variable d'environnement en float
-def _env_float(name: str, default: float) -> float:
-    raw = os.environ.get(name)
-    if raw is None:
-        return default
-    try:
-        return float(str(raw).strip())
-    except Exception:
-        return default
-
-# Résout le chemin du navigateur Chrome
-def _resolve_chrome_path() -> str:
-
-    # macOS default install
-    mac_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-    if os.path.exists(mac_path):
-        return mac_path
-
-    # Linux common paths
-    linux_path = "/usr/bin/google-chrome"
-    if os.path.exists(linux_path):
-        return linux_path
-
-    return linux_path | mac_path
-
-
-def _create_browser(headless: bool, proxy: Optional[ProxySettings] = None) -> Browser:
-    chrome_path = _resolve_chrome_path()
-    devtools_enabled = False
-
-    browser_args = [
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-background-networking",
-        "--disable-sync",
-        "--new-window",
-        "--remote-debugging-address=127.0.0.1",
-    ]
-    
-    # Ajouter des arguments supplémentaires pour les VM si proxy est utilisé
-    if proxy:
-        browser_args.extend([
-            "--disable-dev-shm-usage",
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-web-security",
-            "--disable-features=VizDisplayCompositor",
-            "--window-size=960,1080",
-        ])
-
-    return Browser(
-        executable_path=chrome_path,
-        headless=headless,
-        devtools=devtools_enabled,
-        enable_default_extensions=False,
-        args=browser_args,
-        # proxy=proxy, # Désactivé pour le moment
-        wait_for_network_idle_page_load_time=10,  # Augmenté de 5 à 10 secondes
-        minimum_wait_page_load_time=15,  # Augmenté de 10 à 15 secondes
-    )
-
-# Charge un proxy aléatoire depuis le fichier proxies
-def _load_random_proxy(proxies_file: str = "proxies") -> Optional[ProxySettings]:
-    """Charge un proxy aléatoire depuis le fichier proxies."""
-    try:
-        with open(proxies_file, 'r', encoding='utf-8') as f:
-            proxy_lines = [line.strip() for line in f.readlines() if line.strip()]
-        
-        if not proxy_lines:
-            return None
-        
-        # Sélectionner un proxy aléatoire
-        random_proxy_line = random.choice(proxy_lines)
-        
-        # Parser le format: host:port:username:password
-        parts = random_proxy_line.split(':')
-        if len(parts) != 4:
-            return None
-        
-        host, port, username, password = parts
-        
-        proxy_config = ProxySettings(
-            server=f'https://{host}:{port}',
-            username=username,
-            password=password,
-            bypass='localhost,127.0.0.1'
-        )
-        
-        return proxy_config
-        
-    except FileNotFoundError:
-        return None
-    except Exception:
-        return None
 
 # Prompt concis pour la réservation
 def _create_booking_prompt(url: str, user_info: dict) -> str:
@@ -194,15 +92,15 @@ def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] =
         dict: {"raw_result": <résultat agent>, "error": None} ou {"raw_result": None, "error": "<message>"}
     """
     # Par défaut, afficher le navigateur
-    headless_default = _env_bool("BROWSERUSE_HEADLESS", False)
+    headless_default = False
     headless = headless_default if headless is None else bool(headless)
     
     try:
-        # Charger un proxy aléatoire
-        proxy_config = _load_random_proxy()
         
-        # Créer le navigateur en utilisant la fonction helper
-        browser = _create_browser(headless=headless, proxy=proxy_config)
+        # Connexion CDP au browser
+        browser = Browser(
+            cdp_url="http://localhost:9222",
+        )
         
         # Créer le prompt de réservation
         booking_task = _create_booking_prompt(calendar_url, user_info)
