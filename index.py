@@ -46,27 +46,26 @@ class BookingOutput(BaseModel):
 def _create_booking_prompt(url: str, user_info: dict) -> str:
     """Crée un prompt concis pour la réservation."""
     return f"""
-    Réserve un rendez-vous Calendly sur {url} avec ces informations:
+    Réserve un rendez-vous sur le calendrier {url} avec ces informations:
     Nom: {user_info.get('nom')} | Email: {user_info.get('email')} | Téléphone: {user_info.get('telephone')}
     Société: {user_info.get('societe')} | Site: {user_info.get('site_web')} | Message: {user_info.get('message')}
 
     RÈGLES IMPORTANTES:
-    - Calendly est une application SPA (Single Page Application) qui peut prendre 10-15 secondes à charger complètement
+    - Le calendrier est une application SPA (Single Page Application) qui peut prendre 10-15 secondes à charger complètement
     - Si la page semble vide au début, ATTENDS au moins 15 secondes avant de prendre une décision
     - NE JAMAIS ouvrir un nouvel onglet si la page est en cours de chargement
     - Attends que les éléments interactifs apparaissent (boutons, calendrier, créneaux)
     - Si après 20 secondes la page est toujours vide, alors → ERREUR_RESERVATION
 
     Étapes à suivre:
-    1) Va sur {url}. ATTENDS 15 secondes minimum pour que Calendly charge complètement. Ne crée JAMAIS un nouvel onglet pendant le chargement.
+    1) Va sur {url}. ATTENDS 15 secondes minimum pour que le calendrier charge complètement. Ne crée JAMAIS un nouvel onglet pendant le chargement.
     2) Cherche {user_info.get('preference_creneau')}. Si aucun → AUCUN_CRENEAU_DISPONIBLE
     3) Sélectionne le premier créneau disponible
-    4) Valide le créneau en cliquant sur "Suivant" ou "Next"
-    5) Remplis le formulaire avec les informations fournies (respecter le format des champs).
-    6) Soumets le formulaire, si confirmation visible "Vous avez rendez-vous" ou "You are scheduled". -> SUCCESS_RESERVATION, sinon -> ERREUR_RESERVATION
+    4) Valide le créneau sélectionné pour afficher le formulaire de réservation.
+    5) Remplis le formulaire avec les informations fournies (respecte le format des champs).
+    6) Soumets le formulaire, si confirmation visible "Rendez-vous réservé" ou "Confirmation". -> SUCCESS_RESERVATION, sinon -> ERREUR_RESERVATION
 
     Retourne UNE de ces valeurs: SUCCESS_RESERVATION, AUCUN_CRENEAU_DISPONIBLE, ERREUR_RESERVATION
-    Préfère visioconférence (Google Meet) si option disponible.
     """
 
 # Fonction principale de réservation de calendrier
