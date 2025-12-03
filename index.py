@@ -43,40 +43,38 @@ class BookingOutput(BaseModel):
 
 
 # Prompt concis pour la réservation
-def _create_booking_prompt(user_info: dict) -> str:
+def _create_booking_prompt(url: str, user_info: dict) -> str:
     """Crée un prompt concis pour la réservation."""
     return f"""
-    La page du calendrier est DÉJÀ CHARGÉE. NE PAS naviguer.
-    
-    Réserve un rendez-vous sur le calendrier avec ces informations:
+    Réserve un rendez-vous sur le calendrier {url} avec ces informations:
     Nom: {user_info.get('nom')} | Email: {user_info.get('email')} | Téléphone: {user_info.get('telephone')}
     Société: {user_info.get('societe')} | Site: {user_info.get('site_web')} | Message: {user_info.get('message')}
 
-    RÈGLES CRITIQUES:
-    - La page est DÉJÀ CHARGÉE et AFFICHÉE dans l'onglet actuel
-    - NE PAS naviguer vers une autre URL, même si tu vois une URL dans les informations
-    - NE PAS ouvrir un nouvel onglet ou une nouvelle page
-    - NE PAS utiliser la barre d'adresse pour naviguer
-    - Utilise UNIQUEMENT la page actuelle qui est déjà ouverte
-    - Le calendrier est une application SPA qui peut prendre 10-15 secondes à charger complètement
+    RÈGLES IMPORTANTES:
+    - Le calendrier est une application SPA (Single Page Application) qui peut prendre 10-15 secondes à charger complètement
+    - Si la page semble vide au début, ATTENDS au moins 15 secondes avant de prendre une décision
+    - NE JAMAIS ouvrir un nouvel onglet si la page est en cours de chargement
     - Attends que les éléments interactifs apparaissent (boutons, calendrier, créneaux)
+    - Si après 20 secondes la page est toujours vide, alors → ERREUR_RESERVATION
 
     Étapes à suivre:
-    1) Cherche {user_info.get('preference_creneau')}. Si aucun → AUCUN_CRENEAU_DISPONIBLE
-    2) Sélectionne le premier créneau disponible
-    3) Valide le créneau sélectionné pour afficher le formulaire de réservation.
-    4) Remplis le formulaire avec les informations fournies (respecte le format des champs).
-    5) Soumets le formulaire, si confirmation visible "Rendez-vous réservé" ou "Confirmation". -> SUCCESS_RESERVATION, sinon -> ERREUR_RESERVATION
+    1) Va sur {url}. ATTENDS 15 secondes minimum pour que le calendrier charge complètement. Ne crée JAMAIS un nouvel onglet pendant le chargement.
+    2) Cherche {user_info.get('preference_creneau')}. Si aucun → AUCUN_CRENEAU_DISPONIBLE
+    3) Sélectionne le premier créneau disponible
+    4) Valide le créneau sélectionné pour afficher le formulaire de réservation.
+    5) Remplis le formulaire avec les informations fournies (respecte le format des champs).
+    6) Soumets le formulaire, si confirmation visible "Rendez-vous réservé" ou "Confirmation". -> SUCCESS_RESERVATION, sinon -> ERREUR_RESERVATION
 
     Retourne UNE de ces valeurs: SUCCESS_RESERVATION, AUCUN_CRENEAU_DISPONIBLE, ERREUR_RESERVATION
     """
 
 # Fonction principale de réservation de calendrier
-def book_calendar(user_info: dict, headless: Optional[bool] = None, max_steps: int = 15) -> dict:
+def book_calendar(calendar_url: str, user_info: dict, headless: Optional[bool] = None, max_steps: int = 15) -> dict:
     """
-    Réserve un créneau sur un calendrier déjà chargé dans la page actuelle.
+    Réserve un créneau sur un calendrier donné.
     
     Args:
+        calendar_url: URL du calendrier à réserver
         user_info: Dictionnaire contenant les informations utilisateur:
             - nom: str
             - email: str
@@ -104,7 +102,7 @@ def book_calendar(user_info: dict, headless: Optional[bool] = None, max_steps: i
         )
         
         # Créer le prompt de réservation
-        booking_task = _create_booking_prompt(user_info)
+        booking_task = _create_booking_prompt(calendar_url, user_info)
         
         # Créer l'agent avec le modèle de sortie
         agent = Agent(
@@ -117,8 +115,11 @@ def book_calendar(user_info: dict, headless: Optional[bool] = None, max_steps: i
         # Exécuter la réservation
         result = agent.run_sync(max_steps=max_steps)
         
-        # NE PAS fermer le navigateur ici car book.js le gère
-        # Le navigateur sera fermé par book.js après la fin du processus Python
+        # Nettoyer le navigateur
+        try:
+            browser.close()
+        except Exception:
+            pass
         
         # Convertir le résultat en format sérialisable pour JSON
         # Le résultat peut être un objet Pydantic, une liste, ou autre
