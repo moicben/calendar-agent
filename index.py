@@ -46,16 +46,20 @@ class BookingOutput(BaseModel):
 def _create_booking_prompt(user_info: dict) -> str:
     """Crée un prompt concis pour la réservation."""
     return f"""
-    Réserve un rendez-vous sur le calendrier déjà chargé dans la page actuelle avec ces informations:
+    La page du calendrier est DÉJÀ CHARGÉE. NE PAS naviguer.
+    
+    Réserve un rendez-vous sur le calendrier avec ces informations:
     Nom: {user_info.get('nom')} | Email: {user_info.get('email')} | Téléphone: {user_info.get('telephone')}
     Société: {user_info.get('societe')} | Site: {user_info.get('site_web')} | Message: {user_info.get('message')}
 
-    RÈGLES IMPORTANTES:
-    - Le calendrier est une application SPA (Single Page Application) qui peut prendre 10-15 secondes à charger complètement
-    - La page est déjà chargée, NE PAS naviguer vers une autre URL
-    - NE JAMAIS ouvrir un nouvel onglet
+    RÈGLES CRITIQUES:
+    - La page est DÉJÀ CHARGÉE et AFFICHÉE dans l'onglet actuel
+    - NE PAS naviguer vers une autre URL, même si tu vois une URL dans les informations
+    - NE PAS ouvrir un nouvel onglet ou une nouvelle page
+    - NE PAS utiliser la barre d'adresse pour naviguer
+    - Utilise UNIQUEMENT la page actuelle qui est déjà ouverte
+    - Le calendrier est une application SPA qui peut prendre 10-15 secondes à charger complètement
     - Attends que les éléments interactifs apparaissent (boutons, calendrier, créneaux)
-    - Si après 20 secondes la page est toujours vide, alors → ERREUR_RESERVATION
 
     Étapes à suivre:
     1) Cherche {user_info.get('preference_creneau')}. Si aucun → AUCUN_CRENEAU_DISPONIBLE
@@ -113,11 +117,8 @@ def book_calendar(user_info: dict, headless: Optional[bool] = None, max_steps: i
         # Exécuter la réservation
         result = agent.run_sync(max_steps=max_steps)
         
-        # Nettoyer le navigateur
-        try:
-            browser.close()
-        except Exception:
-            pass
+        # NE PAS fermer le navigateur ici car book.js le gère
+        # Le navigateur sera fermé par book.js après la fin du processus Python
         
         # Convertir le résultat en format sérialisable pour JSON
         # Le résultat peut être un objet Pydantic, une liste, ou autre
