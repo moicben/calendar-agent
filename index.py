@@ -48,7 +48,15 @@ def _create_booking_prompt(user_info: dict) -> str:
     return f"""
     Réserve un rendez-vous sur le calendrier déjà chargé dans la page actuelle avec ces informations:
     Nom: {user_info.get('nom')} | Email: {user_info.get('email')} | Téléphone: {user_info.get('telephone')}
-    Société: {user_info.get('societe')} | Site: {user_info.get('site_web')} | Message: {user_info.get('message')}
+    Société: {user_info.get('societe')} | Message: {user_info.get('message')}
+    
+    ⚠️ CRITIQUE - LIS ATTENTIVEMENT:
+    - La page du calendrier est DÉJÀ CHARGÉE et AFFICHÉE dans l'onglet actuel
+    - NE PAS naviguer vers une autre URL, même si tu vois une URL dans les informations
+    - NE PAS ouvrir un nouvel onglet ou une nouvelle page
+    - NE PAS utiliser la barre d'adresse pour naviguer
+    - Utilise UNIQUEMENT la page actuelle qui est déjà ouverte
+    - Si tu vois une URL comme "www.ig.ca/fr" dans les informations, IGNORE-LA complètement
 
     RÈGLES IMPORTANTES:
     - Le calendrier est une application SPA (Single Page Application) qui peut prendre 10-15 secondes à charger complètement
@@ -93,6 +101,26 @@ def book_calendar(user_info: dict, headless: Optional[bool] = None, max_steps: i
     headless = headless_default if headless is None else bool(headless)
     
     try:
+        import requests
+        
+        # Obtenir la liste des pages existantes via CDP
+        try:
+            cdp_response = requests.get("http://localhost:9222/json")
+            targets = cdp_response.json()
+            
+            # Trouver la première page (onglet) qui n'est pas une page de DevTools
+            page_target = None
+            for target in targets:
+                if target.get('type') == 'page' and not target.get('url', '').startswith('chrome-devtools://'):
+                    page_target = target
+                    break
+            
+            if page_target:
+                print(f"[book_calendar] Page existante trouvée: {page_target.get('url', 'unknown')}")
+            else:
+                print(f"[book_calendar] Aucune page existante trouvée, browser-use utilisera la page active")
+        except Exception as e:
+            print(f"[book_calendar] Erreur lors de la recherche de la page existante: {e}")
         
         # Connexion CDP au browser
         browser = Browser(
@@ -113,11 +141,8 @@ def book_calendar(user_info: dict, headless: Optional[bool] = None, max_steps: i
         # Exécuter la réservation
         result = agent.run_sync(max_steps=max_steps)
         
-        # Nettoyer le navigateur
-        try:
-            browser.close()
-        except Exception:
-            pass
+        # NE PAS fermer le navigateur ici car book.js le gère
+        # Le navigateur sera fermé par book.js après la fin du processus Python
         
         # Convertir le résultat en format sérialisable pour JSON
         # Le résultat peut être un objet Pydantic, une liste, ou autre
